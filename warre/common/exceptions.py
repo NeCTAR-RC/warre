@@ -1,0 +1,3 @@
+
+class FlavorDoesNotExist(Exception):
+    pass
