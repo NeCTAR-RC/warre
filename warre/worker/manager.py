@@ -58,6 +58,7 @@ class Manager(object):
         else:
             reservation.lease_id = lease['id']
             reservation.status = models.Reservation.ALLOCATED
+            LOG.info("Created Blazar lease with ID %s", reservation.lease_id)
         db.session.add(reservation)
         db.session.commit()
 
