@@ -26,4 +26,4 @@ flavor = FlavorSchema()
 flavors = FlavorSchema(many=True)
 flavorcreate = FlavorSchema(exclude=('id',))
 flavorupdate = FlavorSchema(exclude=('id', 'vcpu', 'memory_mb',
-                                     'disk_gb', 'properties'))
+                                     'disk_gb', 'properties'), partial=True)
