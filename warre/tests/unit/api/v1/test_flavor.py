@@ -88,3 +88,21 @@ class TestAdminFlavorAPI(TestFlavorAPI):
         self.assert200(response)
         results = response.get_json().get('results')
         self.assertEqual(2, len(results))
+
+    def test_flavor_update(self):
+        flavor = self.create_flavor(slots=20)
+        self.assertEqual(20, flavor.slots)
+        data = {'slots': 50}
+        response = self.client.patch('/v1/flavors/%s/' % flavor.id, json=data)
+        self.assertStatus(response, 200)
+        flavor = db.session.query(models.Flavor).get(flavor.id)
+        api_flavor = response.get_json()
+        self.assertEqual(50, api_flavor.get('slots'))
+        self.assertEqual(50, flavor.slots)
+
+    def test_flavor_update_immutable(self):
+        flavor = self.create_flavor(vcpu=4)
+        self.assertEqual(4, flavor.vcpu)
+        data = {'vcpu': 8}
+        response = self.client.patch('/v1/flavors/%s/' % flavor.id, json=data)
+        self.assertStatus(response, 400)
