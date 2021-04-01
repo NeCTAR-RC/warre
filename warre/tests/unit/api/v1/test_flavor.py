@@ -62,19 +62,6 @@ class TestFlavorAPI(base.ApiTestCase):
         results = response.get_json().get('results')
         self.assertEqual(1, len(results))
 
-    def test_flavor_create(self):
-        data = {'name': 'test.create',
-                'vcpu': 1,
-                'memory_mb': 10,
-                'disk_gb': 20,
-                'max_length_hours': 1,
-                'slots': 1}
-        response = self.client.post('/v1/flavors/', json=data)
-        self.assertStatus(response, 202)
-        flavor = db.session.query(models.Flavor).all()[0]
-        api_flavor = response.get_json()
-        self.assertEqual(flavor.name, api_flavor.get('name'))
-
 
 class TestAdminFlavorAPI(TestFlavorAPI):
 
@@ -88,6 +75,7 @@ class TestAdminFlavorAPI(TestFlavorAPI):
         self.assert200(response)
         results = response.get_json().get('results')
         self.assertEqual(2, len(results))
+
 
     def test_flavor_update(self):
         flavor = self.create_flavor(slots=20)
@@ -105,3 +93,16 @@ class TestAdminFlavorAPI(TestFlavorAPI):
         data = {'vcpu': 8}
         response = self.client.patch('/v1/flavors/%s/' % flavor.id, json=data)
         self.assertStatus(response, 400)
+
+    def test_flavor_create(self):
+        data = {'name': 'test.create',
+                'vcpu': 1,
+                'memory_mb': 10,
+                'disk_gb': 20,
+                'max_length_hours': 1,
+                'slots': 1}
+        response = self.client.post('/v1/flavors/', json=data)
+        self.assertStatus(response, 202)
+        flavor = db.session.query(models.Flavor).all()[0]
+        api_flavor = response.get_json()
+        self.assertEqual(flavor.name, api_flavor.get('name'))
