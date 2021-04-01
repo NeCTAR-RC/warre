@@ -65,6 +65,11 @@ class FlavorList(base.Resource):
         return self.paginate(query, args)
 
     def post(self, **kwargs):
+        try:
+            self.authorize('create')
+        except policy.PolicyNotAuthorized:
+            flask_restful.abort(403, message="Not authorised")
+
         json_data = request.get_json()
         if not json_data:
             return {"message": "No input data provided"}, 400

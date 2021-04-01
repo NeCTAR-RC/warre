@@ -79,6 +79,12 @@ flavor_rules = [
                     {'path': '/v1/flavors/',
                      'method': 'HEAD'}]),
     policy.DocumentedRuleDefault(
+        name=FLAVOR_PREFIX % 'create',
+        check_str='rule:%s' % ADMIN_OR_WRITER,
+        description='Create flavor.',
+        operations=[{'path': '/v1/flavors/',
+                     'method': 'POST'}]),
+    policy.DocumentedRuleDefault(
         name=FLAVOR_PREFIX % 'list:all',
         check_str='rule:%s' % ADMIN_OR_READER,
         description='List all flavors.',
