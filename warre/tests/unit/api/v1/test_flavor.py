@@ -100,9 +100,11 @@ class TestAdminFlavorAPI(TestFlavorAPI):
                 'memory_mb': 10,
                 'disk_gb': 20,
                 'max_length_hours': 1,
-                'slots': 1}
+                'slots': 1,
+                'extra_specs': {'foo': 'bar'}}
         response = self.client.post('/v1/flavors/', json=data)
         self.assertStatus(response, 202)
         flavor = db.session.query(models.Flavor).all()[0]
         api_flavor = response.get_json()
         self.assertEqual(flavor.name, api_flavor.get('name'))
+        self.assertEqual('bar', flavor.extra_specs.get('foo'))
