@@ -42,6 +42,8 @@ class TestCase(flask_testing.TestCase):
         super().setUp()
         self.addCleanup(mock.patch.stopall)
         db.create_all()
+        self.context = context.RequestContext(user_id=USER_ID,
+                                              project_id=PROJECT_ID)
 
     def tearDown(self):
         super().tearDown()
