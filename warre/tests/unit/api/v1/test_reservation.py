@@ -12,10 +12,12 @@
 #    under the License.
 
 import datetime
+from unittest import mock
 
 from warre.tests.unit import base
 
 
+@mock.patch('warre.quota.get_enforcer', new=mock.Mock())
 class TestReservationAPI(base.ApiTestCase):
 
     def setUp(self):
@@ -42,6 +44,28 @@ class TestReservationAPI(base.ApiTestCase):
         self.assert200(response)
         results = response.get_json().get('results')
         self.assertEqual(0, len(results))
+
+    def test_create_resevation(self):
+        data = {'flavor_id': self.flavor.id, 'start': '2020-01-01 00:00',
+                'end': '2020-01-01 01:00'}
+        response = self.client.post('/v1/reservations/', json=data)
+        self.assert200(response)
+
+    def test_create_resevation_noinput(self):
+        data = {}
+        response = self.client.post('/v1/reservations/', json=data)
+        self.assert400(response)
+
+    def test_create_resevation_bad_flavor(self):
+        data = {'flavor_id': 'bogus', 'start': '2020-01-01 00:00',
+                'end': '2020-02-02 00:00'}
+        response = self.client.post('/v1/reservations/', json=data)
+        self.assert404(response)
+
+    def test_create_resevation_missing_args(self):
+        data = {'flavor_id': self.flavor.id, 'start': '2020-01-01 00:00'}
+        response = self.client.post('/v1/reservations/', json=data)
+        self.assertStatus(response, 422)
 
 
 class TestAdminReservationAPI(TestReservationAPI):
