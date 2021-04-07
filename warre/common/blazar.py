@@ -26,13 +26,14 @@ class BlazarClient(object):
             service_type='reservation')
 
     def create_lease(self, reservation):
-        reservation_info = {'resource_type': 'virtual:instance',
-                            'amount': 1,
-                            'vcpus': reservation.flavor.vcpu,
-                            'memory_mb': reservation.flavor.memory_mb,
-                            'disk_gb': reservation.flavor.disk_gb,
-                            'affinity': False,
-                            'resource_properties': reservation.properties,
+        reservation_info = {
+            'resource_type': 'virtual:instance',
+            'amount': 1,
+            'vcpus': reservation.flavor.vcpu,
+            'memory_mb': reservation.flavor.memory_mb,
+            'disk_gb': reservation.flavor.disk_gb,
+            'affinity': False,
+            'resource_properties': reservation.flavor.properties,
         }
         name = 'Reservation %s' % reservation.id
         start = reservation.start.strftime('%Y-%m-%d %H:%M')
