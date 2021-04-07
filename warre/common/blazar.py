@@ -32,7 +32,7 @@ class BlazarClient(object):
                             'memory_mb': reservation.flavor.memory_mb,
                             'disk_gb': reservation.flavor.disk_gb,
                             'affinity': False,
-                            'resource_properties': reservation.properties,
+                            'resource_properties': reservation.flavor.properties,
         }
         name = 'Reservation %s' % reservation.id
         start = reservation.start.strftime('%Y-%m-%d %H:%M')
