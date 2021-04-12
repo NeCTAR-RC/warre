@@ -1,0 +1,11 @@
+[run]
+omit =
+   warre/wsgi.py
+   warre/cmd/*
+   warre/worker/consumer.py
+   warre/worker/endpoints.py
+   warre/common/service.py
+   warre/worker/api.py
+   warre/common/rpc.py
+   warre/notification/consumer.py
+   warre/notification/endpoints.py
