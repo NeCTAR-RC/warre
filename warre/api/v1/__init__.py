@@ -19,6 +19,7 @@ from warre.api.v1.resources import reservation
 def initialize_resources(api):
     api.add_resource(flavor.FlavorList, '/v1/flavors/')
     api.add_resource(flavor.Flavor, '/v1/flavors/<id>/')
+    api.add_resource(flavor.FlavorSlots, '/v1/flavors/<id>/free-slots/')
 
     api.add_resource(flavorproject.FlavorProjectList, '/v1/flavorprojects/')
 

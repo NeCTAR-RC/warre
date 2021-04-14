@@ -11,8 +11,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import datetime
+
 from flask import request
 import flask_restful
+from flask_restful import inputs
 from flask_restful import reqparse
 import marshmallow
 from oslo_log import log as logging
@@ -126,3 +129,43 @@ class Flavor(base.Resource):
         db.session.commit()
 
         return self.schema.dump(flavor)
+
+
+class FlavorSlots(Flavor):
+
+    def get(self, id):
+        flavor = self._get_flavor(id)
+        today = datetime.datetime.now()
+        one_month = today + datetime.timedelta(days=30)
+        parser = reqparse.RequestParser()
+        parser.add_argument('limit', type=int)
+        parser.add_argument('start', type=inputs.date, default=today)
+        parser.add_argument('end', type=inputs.date, default=one_month)
+        args = parser.parse_args()
+        start = args.get('start')
+        end = args.get('end')
+
+        reservations = db.session.query(models.Reservation) \
+            .filter(models.Reservation.end >= start) \
+            .filter(models.Reservation.start <= end) \
+            .filter_by(status=models.Reservation.ALLOCATED) \
+            .filter_by(flavor_id=flavor.id).all()
+
+        reserved_dates = []
+        for reservation in reservations:
+            reserved_dates += [
+                reservation.start + datetime.timedelta(n)
+                for n in range((reservation.end - reservation.start).days + 1)
+            ]
+
+        all_dates = [
+            start + datetime.timedelta(n)
+            for n in range((end - start).days + 1)
+            ]
+
+        free_slots = []
+        for d in all_dates:
+            if reserved_dates.count(d) < flavor.slots:
+                free_slots.append(str(d.date()))
+
+        return {'results': [str(free_slots)]}
