@@ -97,9 +97,9 @@ class Reservation(db.Model):
     start = db.Column(db.DateTime(), nullable=False)
     end = db.Column(db.DateTime(), nullable=False)
 
-    def __init__(self, flavor_id, start, end):
+    def __init__(self, flavor_id, start, end, status=PENDING_CREATE):
         self.id = uuidutils.generate_uuid()
-        self.status = self.PENDING_CREATE
+        self.status = status
         flavor = db.session.query(Flavor).get(flavor_id)
         if not flavor:
             raise exceptions.FlavorDoesNotExist()
