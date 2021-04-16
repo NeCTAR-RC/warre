@@ -13,12 +13,14 @@
 
 from warre.api.v1.resources import flavor
 from warre.api.v1.resources import flavorproject
+from warre.api.v1.resources import freeslot
 from warre.api.v1.resources import reservation
 
 
 def initialize_resources(api):
     api.add_resource(flavor.FlavorList, '/v1/flavors/')
     api.add_resource(flavor.Flavor, '/v1/flavors/<id>/')
+    api.add_resource(freeslot.FlavorFreeSlot, '/v1/flavors/<id>/freeslots')
 
     api.add_resource(flavorproject.FlavorProjectList, '/v1/flavorprojects/')
 
