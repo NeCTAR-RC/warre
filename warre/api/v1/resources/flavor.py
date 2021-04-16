@@ -11,8 +11,14 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from datetime import datetime
+from datetime import timedelta
+from itertools import chain
+from operator import itemgetter
+
 from flask import request
 import flask_restful
+from flask_restful import inputs
 from flask_restful import reqparse
 import marshmallow
 from oslo_log import log as logging
@@ -126,3 +132,90 @@ class Flavor(base.Resource):
         db.session.commit()
 
         return self.schema.dump(flavor)
+
+
+class FlavorFreeSlot(Flavor):
+
+    schema = schemas.freeslots
+
+    def get(self, id, **kwargs):
+        """Get the free slots of a flavor
+        Algorithm:
+        1. Get slots from flavor table as the total resource
+        2. Get all reservations of current flavor
+        3. Calculate the free slots
+        """
+        parser = reqparse.RequestParser()
+        parser.add_argument(
+            'start', type=inputs.date,
+            default=datetime.now())
+        parser.add_argument(
+            'end', type=inputs.date,
+            default=datetime.now() + timedelta(days=365))
+        args = parser.parse_args()
+
+        try:
+            self.authorize('get')
+        except policy.PolicyNotAuthorized:
+            flask_restful.abort(403, message="Not authorised")
+
+        # Get all reservations for this flavor
+        flavor = self._get_flavor(id)
+        reservations = db.session.query(models.Reservation) \
+            .filter(models.Reservation.end >= args.start) \
+            .filter(models.Reservation.start <= args.end) \
+            .filter_by(status=models.Reservation.ALLOCATED) \
+            .filter_by(flavor_id=flavor.id).all()
+
+        # the real thing begins here
+        # Pass 1: segmentation and marking
+        # put every start, end date into a list
+        time_list = list(chain.from_iterable(
+            [(r.start, 'start'), (r.end, 'end')] for r in reservations))
+        # sort on time
+        time_list.sort(key=itemgetter(0))
+        segments = []
+        current_slot = 0
+        last_point = None
+        for point, kind in time_list:
+            if last_point is not None:
+                segments.append({
+                    "start": last_point,
+                    "end": point,
+                    "slot": current_slot
+                    })
+            # update last_point
+            last_point = point
+            # adjust current slot
+            current_slot = current_slot + 1 if kind == 'start' \
+                else current_slot - 1
+        # Pass2: only keep slot >= maximum capacity, a.k.a. busy slots
+        busy_slots = \
+            [s for s in segments if s["slot"] >= flavor.slots]
+
+        if len(busy_slots) == 0:
+            return self.schema.dump([{
+                "start": args.start,
+                "end": args.end
+                }])
+        query = []
+        start_free = args.start
+        # Pass3: remove busy slots
+        for s in busy_slots:
+            if s["start"] <= args.start <= s["end"]:
+                start_free = s["end"]
+            else:
+                if start_free < s["start"]:
+                    query.append({
+                        "start": start_free,
+                        "end": s["start"]
+                    })
+                start_free = s["end"]
+        # add the last one
+        if start_free < args.end:
+            query.append({
+                "start": start_free,
+                "end": args.end
+            })
+
+        return self.schema.dump(query)

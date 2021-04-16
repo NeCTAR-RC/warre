@@ -22,8 +22,16 @@ class FlavorSchema(ma.SQLAlchemyAutoSchema):
         load_instance = True
 
 
+class FlavorFreeSlotSchema(ma.Schema):
+
+    class Meta(object):
+        # Fields to expose
+        fields = ("start", "end")
+
+
 flavor = FlavorSchema()
 flavors = FlavorSchema(many=True)
 flavorcreate = FlavorSchema(exclude=('id',))
 flavorupdate = FlavorSchema(exclude=('id', 'vcpu', 'memory_mb',
                                      'disk_gb', 'properties'), partial=True)
+freeslots = FlavorFreeSlotSchema(many=True)
