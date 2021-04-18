@@ -14,7 +14,6 @@
 import os
 
 import flask
-from keystonemiddleware import auth_token
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_middleware import healthcheck
@@ -70,7 +69,7 @@ def create_app(test_config=None, conf_file=None, init_config=True):
 
     if CONF.auth_strategy == 'keystone':
         app.wsgi_app = keystone.KeystoneContext(app.wsgi_app)
-        app.wsgi_app = auth_token.AuthProtocol(app.wsgi_app, {})
+        app.wsgi_app = keystone.SkippingAuthProtocol(app.wsgi_app, {})
     rpc.init()
 
     return app

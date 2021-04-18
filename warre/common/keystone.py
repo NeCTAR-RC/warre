@@ -12,6 +12,7 @@
 #    under the License.
 
 from keystoneauth1 import loading as ks_loading
+from keystonemiddleware import auth_token
 from oslo_config import cfg
 from oslo_context import context
 from oslo_log import log as logging
@@ -19,8 +20,8 @@ from oslo_log import log as logging
 
 LOG = logging.getLogger(__name__)
 
-AUTH_PATH = '/api'
 REQUEST_CONTEXT_ENV = 'oslo_context'
+_NOAUTH_PATHS = ['/', '/healthcheck']
 
 
 class KeystoneSession(object):
@@ -63,3 +64,27 @@ class KeystoneContext(object):
         request_context = context.RequestContext.from_environ(environ)
         environ[REQUEST_CONTEXT_ENV] = request_context
         return self.app(environ, start_response)
+
+
+class SkippingAuthProtocol(auth_token.AuthProtocol):
+    """SkippingAuthProtocol to reach special endpoints
+
+    Bypasses keystone authentication for special request paths, such
+    as the api version discovery path.
+
+    Note:
+        SkippingAuthProtocol is lean customization
+        of :py:class:`keystonemiddleware.auth_token.AuthProtocol`
+        that disables keystone communication if the request path
+        is in the _NOAUTH_PATHS list.
+
+    """
+
+    def process_request(self, request):
+        path = request.path
+        if path in _NOAUTH_PATHS:
+            LOG.debug('Request path is %s and it does not require keystone '
+                      'authentication', path)
+            return None  # return NONE to reach actual logic
+
+        return super().process_request(request)
