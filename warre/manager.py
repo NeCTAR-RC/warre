@@ -42,7 +42,8 @@ class Manager(object):
 
         reservations = db.session.query(models.Reservation) \
             .filter(models.Reservation.end >= reservation.start) \
-            .filter(models.Reservation.start <= reservation.end)
+            .filter(models.Reservation.start <= reservation.end) \
+            .filter_by(flavor_id=flavor.id)
         if reservations.count() >= flavor.slots:
             raise exceptions.InvalidReservation("No capacity")
 
