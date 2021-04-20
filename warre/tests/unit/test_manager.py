@@ -26,8 +26,8 @@ class TestManager(base.TestCase):
     def setUp(self):
         super().setUp()
         # Create some data to muddy the waters
-        flavor = self.create_flavor()
-        self.create_reservation(flavor_id=flavor.id,
+        self.flavor = self.create_flavor()
+        self.create_reservation(flavor_id=self.flavor.id,
                                 start=datetime.datetime(2020, 1, 1),
                                 end=datetime.datetime(2020, 1, 2))
 
@@ -120,3 +120,17 @@ class TestManager(base.TestCase):
             reservation.lease_id)
         reservations = db.session.query(models.Reservation).all()
         self.assertEqual(reservations_pre, reservations)
+
+    def test_delete_flavor(self):
+        flavors_pre = db.session.query(models.Flavor).all()
+        flavor = self.create_flavor()
+        mgr = manager.Manager()
+        mgr.delete_flavor(self.context, flavor)
+        flavors = db.session.query(models.Flavor).all()
+        self.assertEqual(flavors_pre, flavors)
+
+    def test_delete_flavor_in_use(self):
+        mgr = manager.Manager()
+        with self.assertRaisesRegex(exceptions.FlavorInUse,
+                f"Flavor {self.flavor.id} is in use"):
+            mgr.delete_flavor(self.context, self.flavor)

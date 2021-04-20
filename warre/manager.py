@@ -60,3 +60,11 @@ class Manager(object):
 
         db.session.delete(reservation)
         db.session.commit()
+
+    def delete_flavor(self, context, flavor):
+        reservations = db.session.query(models.Reservation) \
+            .filter_by(flavor_id=flavor.id).all()
+        if reservations:
+            raise exceptions.FlavorInUse(f'Flavor {flavor.id} is in use')
+        db.session.delete(flavor)
+        db.session.commit()

@@ -26,6 +26,7 @@ from oslo_policy import policy
 
 from warre.api.v1.resources import base
 from warre.api.v1.schemas import flavor as schemas
+from warre.common import exceptions
 from warre.common import policies
 from warre.extensions import db
 from warre import models
@@ -132,6 +133,19 @@ class Flavor(base.Resource):
         db.session.commit()
 
         return self.schema.dump(flavor)
+
+    def delete(self, id):
+        flavor = self._get_flavor(id)
+        try:
+            self.authorize('delete')
+        except policy.PolicyNotAuthorized:
+            flask_restful.abort(
+                404, message="Flavor {} dosn't exist".format(id))
+        try:
+            self.manager.delete_flavor(self.context, flavor)
+        except exceptions.FlavorInUse as err:
+            return {'error_message': str(err)}, 409
+        return '', 204
 
 
 class FlavorFreeSlot(Flavor):

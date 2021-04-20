@@ -11,6 +11,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import datetime
+
 from warre.extensions import db
 from warre import models
 from warre.tests.unit import base
@@ -108,3 +110,16 @@ class TestAdminFlavorAPI(TestFlavorAPI):
         api_flavor = response.get_json()
         self.assertEqual(flavor.name, api_flavor.get('name'))
         self.assertEqual('bar', flavor.extra_specs.get('foo'))
+
+    def test_delete_flavor(self):
+        flavor = self.create_flavor()
+        response = self.client.delete('/v1/flavors/%s/' % flavor.id)
+        self.assertStatus(response, 204)
+
+    def test_delete_flavor_in_use(self):
+        flavor = self.create_flavor()
+        self.create_reservation(flavor_id=flavor.id,
+                                start=datetime.datetime(2021, 1, 1),
+                                end=datetime.datetime(2021, 1, 2))
+        response = self.client.delete('/v1/flavors/%s/' % flavor.id)
+        self.assertStatus(response, 409)
