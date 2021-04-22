@@ -29,7 +29,7 @@ class ReservationCreateSchema(ma.SQLAlchemyAutoSchema):
         model = models.Reservation
         load_instance = True
         include_fk = True
-        exclude = ('id', 'user_id', 'project_id', 'status')
+        exclude = ('id', 'user_id', 'project_id', 'status', 'lease_id')
 
 
 reservation = ReservationSchema()
