@@ -18,3 +18,11 @@ services:
     volumes:
       - /etc/warre:/etc/warre
     command: ["warre-worker"]
+  notification:
+      image: warre
+      build:
+        context: .
+        dockerfile: ./Dockerfile
+      volumes:
+        - /etc/warre:/etc/warre
+      command: ["warre-notification"]

@@ -41,9 +41,13 @@ class Manager(object):
                 flavor.max_length_hours)
 
         reservations = db.session.query(models.Reservation) \
+            .filter_by(flavor_id=flavor.id) \
             .filter(models.Reservation.end >= reservation.start) \
             .filter(models.Reservation.start <= reservation.end) \
-            .filter_by(flavor_id=flavor.id)
+            .filter(models.Reservation.status.in_(
+                (models.Reservation.ALLOCATED,
+                 models.Reservation.ACTIVE))
+        )
         if reservations.count() >= flavor.slots:
             raise exceptions.InvalidReservation("No capacity")
 
