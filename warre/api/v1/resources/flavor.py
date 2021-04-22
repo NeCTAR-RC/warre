@@ -178,7 +178,9 @@ class FlavorFreeSlot(Flavor):
         reservations = db.session.query(models.Reservation) \
             .filter(models.Reservation.end >= args.start) \
             .filter(models.Reservation.start <= args.end) \
-            .filter_by(status=models.Reservation.ALLOCATED) \
+            .filter(models.Reservation.status.in_(
+                (models.Reservation.ALLOCATED,
+                 models.Reservation.ACTIVE))) \
             .filter_by(flavor_id=flavor.id).all()
 
         # the real thing begins here
