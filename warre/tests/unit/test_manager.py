@@ -73,7 +73,8 @@ class TestManager(base.TestCase):
         flavor = self.create_flavor(slots=1)
         reservation1 = models.Reservation(flavor_id=flavor.id,
                                          start=datetime.datetime(2020, 1, 1),
-                                         end=datetime.datetime(2020, 1, 2))
+                                         end=datetime.datetime(2020, 1, 2),
+                                         status=models.Reservation.ALLOCATED)
         mgr = manager.Manager()
         mgr.create_reservation(self.context, reservation1)
         # Create another reservation with same time slot

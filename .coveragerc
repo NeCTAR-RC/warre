@@ -8,4 +8,3 @@ omit =
    warre/worker/api.py
    warre/common/rpc.py
    warre/notification/consumer.py
-   warre/notification/endpoints.py
