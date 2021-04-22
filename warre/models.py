@@ -85,6 +85,8 @@ class Reservation(db.Model):
     PENDING_CREATE = 'PENDING_CREATE'
     ERROR = 'ERROR'
     ALLOCATED = 'ALLOCATED'
+    ACTIVE = 'ACTIVE'
+    COMPLETE = 'COMPLETE'
 
     id = db.Column(db.String(64), primary_key=True)
     user_id = db.Column(db.String(64), nullable=False)
