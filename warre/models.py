@@ -66,7 +66,7 @@ class FlavorProject(db.Model):
     __table_args__ = (
         db.UniqueConstraint('project_id', 'flavor_id'),
     )
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String(64), primary_key=True)
     project_id = db.Column(db.String(64), nullable=False)
     flavor_id = db.Column(db.String(64), db.ForeignKey(Flavor.id),
                           nullable=False)

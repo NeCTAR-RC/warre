@@ -30,7 +30,6 @@ class FlavorProjectCreateSchema(ma.SQLAlchemyAutoSchema):
         model = models.FlavorProject
         load_instance = True
         include_fk = True
-        exclude = ('id',)
 
 
 flavorproject = FlavorProjectSchema()
