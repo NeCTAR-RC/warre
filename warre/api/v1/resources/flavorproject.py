@@ -67,12 +67,12 @@ class FlavorProjectList(base.Resource):
 
         json_data = request.get_json()
         if not json_data:
-            return {"message": "No input data provided"}, 400
+            return {"error_message": "No input data provided"}, 400
 
         try:
             flavorproject = schemas.flavorprojectcreate.load(json_data)
         except exceptions.FlavorDoesNotExist:
-            return "Flavor does not exist", 404
+            return {'error_message': "Flavor does not exist"}, 404
         except marshmallow.ValidationError as err:
             return err.messages, 422
 
