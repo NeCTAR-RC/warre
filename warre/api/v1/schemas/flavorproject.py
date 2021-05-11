@@ -21,7 +21,6 @@ class FlavorProjectSchema(ma.SQLAlchemyAutoSchema):
         model = models.FlavorProject
         load_instance = True
         include_relationships = True
-        exclude = ('id',)
 
 
 class FlavorProjectCreateSchema(ma.SQLAlchemyAutoSchema):
