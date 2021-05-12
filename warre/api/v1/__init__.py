@@ -22,6 +22,7 @@ def initialize_resources(api):
     api.add_resource(flavor.FlavorFreeSlot, '/v1/flavors/<id>/freeslots/')
 
     api.add_resource(flavorproject.FlavorProjectList, '/v1/flavorprojects/')
+    api.add_resource(flavorproject.FlavorProject, '/v1/flavorprojects/<id>/')
 
     api.add_resource(reservation.ReservationList, '/v1/reservations/')
     api.add_resource(reservation.Reservation, '/v1/reservations/<id>/')
