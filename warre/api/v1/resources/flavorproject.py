@@ -80,3 +80,20 @@ class FlavorProjectList(base.Resource):
         db.session.commit()
 
         return schemas.flavorproject.dump(flavorproject)
+
+
+class FlavorProject(base.Resource):
+
+    POLICY_PREFIX = policies.FLAVORPROJECT_PREFIX
+
+    def delete(self, id):
+        flavorproject = db.session.query(models.FlavorProject) \
+            .filter_by(id=id).first_or_404()
+        try:
+            self.authorize('delete')
+        except policy.PolicyNotAuthorized:
+            flask_restful.abort(
+                404, message="FlavorProject {} dosn't exist".format(id))
+        db.session.delete(flavorproject)
+        db.session.commit()
+        return '', 204

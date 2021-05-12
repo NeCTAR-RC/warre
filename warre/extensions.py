@@ -20,4 +20,4 @@ import flask_sqlalchemy
 api = flask_restful.Api()
 db = flask_sqlalchemy.SQLAlchemy()
 ma = flask_marshmallow.Marshmallow()
-migrate = flask_migrate.Migrate()
+migrate = flask_migrate.Migrate(compare_type=True)

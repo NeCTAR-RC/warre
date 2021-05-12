@@ -97,3 +97,12 @@ class TestFlavorProjectAPI(base.ApiTestCase):
         data = {'flavor_id': 'bad-flavor-id', 'project_id': 'xyz'}
         response = self.client.post('/v1/flavorprojects/', json=data)
         self.assert404(response)
+
+    def test_delete_flavorproject(self):
+        fp = models.FlavorProject(project_id='fp-project-id',
+                                  flavor_id=self.flavor.id)
+        db.session.add(fp)
+        db.session.commit()
+
+        response = self.client.delete(f'/v1/flavorprojects/{fp.id}/')
+        self.assertStatus(response, 204)
