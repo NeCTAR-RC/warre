@@ -38,12 +38,14 @@ class Flavor(db.Model):
     slots = db.Column(db.Integer, nullable=False)
     is_public = db.Column(db.Boolean(), default=True)
     extra_specs = db.Column(db.JSON)
+    start = db.Column(db.DateTime())
+    end = db.Column(db.DateTime())
     projects = db.relationship("FlavorProject", back_populates="flavor",
                                    lazy='dynamic', cascade="all,delete")
 
     def __init__(self, name, vcpu, memory_mb, disk_gb, description=None,
                  active=True, properties=None, max_length_hours=504, slots=1,
-                 is_public=True, extra_specs={}):
+                 is_public=True, extra_specs={}, start=None, end=None):
         self.id = uuidutils.generate_uuid()
         self.name = name
         self.description = description
@@ -56,6 +58,8 @@ class Flavor(db.Model):
         self.properties = properties
         self.is_public = is_public
         self.extra_specs = extra_specs
+        self.start = start
+        self.end = end
 
     def __repr__(self):
         return "<Flavor '%s', '%s')>" % (self.id, self.name)

@@ -40,6 +40,15 @@ class Manager(object):
                 "Reservation is too long, max allowed is %s hours" %
                 flavor.max_length_hours)
 
+        if flavor.start and flavor.start > reservation.start:
+            raise exceptions.InvalidReservation(
+                "Reservation start time before flavor start time of %s" %
+                flavor.start)
+        if flavor.end and flavor.end < reservation.end:
+            raise exceptions.InvalidReservation(
+                "Reservation end time before flavor end time of %s" %
+                flavor.end)
+
         reservations = db.session.query(models.Reservation) \
             .filter_by(flavor_id=flavor.id) \
             .filter(models.Reservation.end >= reservation.start) \

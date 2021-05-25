@@ -69,6 +69,30 @@ class TestManager(base.TestCase):
                                     "Flavor is not accessible"):
             mgr.create_reservation(self.context, reservation)
 
+    def test_create_reservation_flavor_end_time_bad(self):
+        flavor = self.create_flavor(end=datetime.datetime(2021, 1, 2))
+        reservation = models.Reservation(flavor_id=flavor.id,
+                                         start=datetime.datetime(2021, 1, 1),
+                                         end=datetime.datetime(2021, 1, 3))
+        mgr = manager.Manager()
+
+        with self.assertRaisesRegex(exceptions.InvalidReservation,
+                                    "Reservation end time before flavor "
+                                    "end time of %s" % flavor.end):
+            mgr.create_reservation(self.context, reservation)
+
+    def test_create_reservation_flavor_start_time_bad(self):
+        flavor = self.create_flavor(start=datetime.datetime(2021, 1, 2))
+        reservation = models.Reservation(flavor_id=flavor.id,
+                                         start=datetime.datetime(2021, 1, 1),
+                                         end=datetime.datetime(2021, 1, 3))
+        mgr = manager.Manager()
+
+        with self.assertRaisesRegex(exceptions.InvalidReservation,
+                                    "Reservation start time before flavor "
+                                    "start time of %s" % flavor.start):
+            mgr.create_reservation(self.context, reservation)
+
     def test_create_reservation_no_slots(self):
         flavor = self.create_flavor(slots=1)
         reservation1 = models.Reservation(flavor_id=flavor.id,
