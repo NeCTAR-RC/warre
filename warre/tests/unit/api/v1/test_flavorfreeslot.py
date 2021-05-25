@@ -207,3 +207,17 @@ class TestFlavorFreeSlotAPI(base.ApiTestCase):
         self.assertEqual(2, len(results))
         self.assertIn('2021-02-01T16', results[0]['end'])
         self.assertIn('2021-02-01T20', results[1]['start'])
+
+    def test_flavor_start_end(self):
+        start = datetime(2021, 1, 10)
+        end = datetime(2021, 1, 20)
+        flavor = self.create_flavor(start=start, end=end)
+        url = f'/v1/flavors/{flavor.id}/freeslots/'
+        start_date = '2021-01-01'
+        end_date = '2021-03-01'
+        response = self.client.get(url,
+            query_string = {'start': start_date, 'end': end_date})
+        self.assertStatus(response, 200)
+        results = response.get_json()
+        self.assertIn("2021-01-10T00:00:00", results[0]['start'])
+        self.assertIn("2021-01-20T00:00:00", results[0]['end'])

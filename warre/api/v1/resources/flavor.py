@@ -175,9 +175,19 @@ class FlavorFreeSlot(Flavor):
 
         # Get all reservations for this flavor
         flavor = self._get_flavor(id)
+
+        start = args.start
+        end = args.end
+
+        if flavor.start and flavor.start > start:
+            start = flavor.start
+
+        if flavor.end and flavor.end < end:
+            end = flavor.end
+
         reservations = db.session.query(models.Reservation) \
-            .filter(models.Reservation.end >= args.start) \
-            .filter(models.Reservation.start <= args.end) \
+            .filter(models.Reservation.end >= start) \
+            .filter(models.Reservation.start <= end) \
             .filter(models.Reservation.status.in_(
                 (models.Reservation.ALLOCATED,
                  models.Reservation.ACTIVE))) \
@@ -211,14 +221,14 @@ class FlavorFreeSlot(Flavor):
 
         if len(busy_slots) == 0:
             return self.schema.dump([{
-                "start": args.start,
-                "end": args.end
+                "start": start,
+                "end": end
                 }])
         query = []
-        start_free = args.start
+        start_free = start
         # Pass3: remove busy slots
         for s in busy_slots:
-            if s["start"] <= args.start <= s["end"]:
+            if s["start"] <= start <= s["end"]:
                 start_free = s["end"]
             else:
                 if start_free < s["start"]:
@@ -228,10 +238,10 @@ class FlavorFreeSlot(Flavor):
                     })
                 start_free = s["end"]
         # add the last one
-        if start_free < args.end:
+        if start_free < end:
             query.append({
                 "start": start_free,
-                "end": args.end
+                "end": end
             })
 
         return self.schema.dump(query)
