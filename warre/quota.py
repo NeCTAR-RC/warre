@@ -18,6 +18,11 @@ from warre import models
 
 
 _ENFORCER = None
+EFFECTIVE_STATUS = (
+    models.Reservation.ACTIVE,
+    models.Reservation.ALLOCATED,
+    models.Reservation.PENDING_CREATE
+)
 
 
 def get_enforcer():
@@ -34,11 +39,13 @@ def get_usage(project_id, resource_names):
 def get_usage_by_project(project_id, resource):
     if resource == 'reservation':
         return db.session.query(models.Reservation) \
-            .filter_by(project_id=project_id).count()
+            .filter_by(project_id=project_id) \
+            .filter(models.Reservation.status.in_(EFFECTIVE_STATUS)).count()
     if resource == 'hours':
         total = 0
         reservations = db.session.query(models.Reservation) \
-            .filter_by(project_id=project_id).all()
+            .filter_by(project_id=project_id) \
+            .filter(models.Reservation.status.in_(EFFECTIVE_STATUS)).all()
         for r in reservations:
             total += r.total_hours
         return total
