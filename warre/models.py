@@ -104,6 +104,7 @@ class Reservation(db.Model):
     start = db.Column(db.DateTime(), nullable=False)
     end = db.Column(db.DateTime(), nullable=False)
     instance_count = db.Column(db.Integer(), nullable=False, default=1)
+    error_reason = db.Column(db.String(255))
 
     def __init__(self, flavor_id, start, end, status=PENDING_CREATE,
             instance_count=1):
