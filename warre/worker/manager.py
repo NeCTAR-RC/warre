@@ -54,6 +54,7 @@ class Manager(object):
             lease = blazar_client.create_lease(reservation)
         except Exception as e:
             reservation.status = models.Reservation.ERROR
+            reservation.status_reason = str(e)
             LOG.exception(e)
         else:
             reservation.lease_id = lease['id']
