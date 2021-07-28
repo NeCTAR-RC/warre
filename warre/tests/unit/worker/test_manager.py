@@ -51,7 +51,7 @@ class TestManager(base.TestCase):
             start=datetime.datetime(2021, 1, 1),
             end=datetime.datetime(2021, 1, 2))
 
-        blazar_client.create_lease.side_effect = Exception
+        blazar_client.create_lease.side_effect = Exception("Bad ERROR")
         manager = worker_manager.Manager()
 
         with mock.patch.object(manager, 'get_bot_session') as get_session:
@@ -62,3 +62,4 @@ class TestManager(base.TestCase):
 
             self.assertIsNone(reservation.lease_id)
             self.assertEqual('ERROR', reservation.status)
+            self.assertEqual('Bad ERROR', reservation.status_reason)
