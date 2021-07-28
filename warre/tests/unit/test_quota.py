@@ -73,3 +73,13 @@ class TestQuota(base.TestCase):
             end=datetime(2021, 3, 2, 13, 0, 0))
         usage = quota.get_usage_by_project(base.PROJECT_ID, 'hours')
         self.assertEqual(4, usage)
+
+    def test_get_usage_by_project_hours_multiple_instances(self):
+        self.create_reservation(
+            status=models.Reservation.ALLOCATED,
+            flavor_id=self.flavor.id,
+            start=datetime(2021, 3, 1, 10, 0, 0),
+            end=datetime(2021, 3, 1, 12, 0, 0),
+            instance_count=7)
+        usage = quota.get_usage_by_project(base.PROJECT_ID, 'hours')
+        self.assertEqual(14, usage)

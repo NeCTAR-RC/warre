@@ -28,7 +28,7 @@ class BlazarClient(object):
     def create_lease(self, reservation):
         reservation_info = {
             'resource_type': 'virtual:instance',
-            'amount': 1,
+            'amount': reservation.instance_count,
             'vcpus': reservation.flavor.vcpu,
             'memory_mb': reservation.flavor.memory_mb,
             'disk_gb': reservation.flavor.disk_gb,

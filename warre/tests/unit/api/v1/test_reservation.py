@@ -50,6 +50,14 @@ class TestReservationAPI(base.ApiTestCase):
                 'end': '2020-01-01 01:00'}
         response = self.client.post('/v1/reservations/', json=data)
         self.assert200(response)
+        self.assertEqual(1, response.get_json().get('instance_count'))
+
+    def test_create_resevation_multiple_instances(self):
+        data = {'flavor_id': self.flavor.id, 'start': '2020-01-01 00:00',
+                'end': '2020-01-01 01:00', 'instance_count': 2}
+        response = self.client.post('/v1/reservations/', json=data)
+        self.assert200(response)
+        self.assertEqual(2, response.get_json().get('instance_count'))
 
     def test_create_resevation_noinput(self):
         data = {}
