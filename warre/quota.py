@@ -47,5 +47,5 @@ def get_usage_by_project(project_id, resource):
             .filter_by(project_id=project_id) \
             .filter(models.Reservation.status.in_(EFFECTIVE_STATES)).all()
         for r in reservations:
-            total += r.total_hours
+            total += (r.instance_count * r.total_hours)
         return total

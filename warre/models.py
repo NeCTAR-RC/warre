@@ -103,8 +103,10 @@ class Reservation(db.Model):
     status = db.Column(db.String(16), nullable=False)
     start = db.Column(db.DateTime(), nullable=False)
     end = db.Column(db.DateTime(), nullable=False)
+    instance_count = db.Column(db.Integer(), nullable=False, default=1)
 
-    def __init__(self, flavor_id, start, end, status=PENDING_CREATE):
+    def __init__(self, flavor_id, start, end, status=PENDING_CREATE, 
+            instance_count=1):
         self.id = uuidutils.generate_uuid()
         self.status = status
         flavor = db.session.query(Flavor).get(flavor_id)
@@ -113,6 +115,7 @@ class Reservation(db.Model):
         self.flavor_id = flavor_id
         self.start = start
         self.end = end
+        self.instance_count = instance_count
 
     def __repr__(self):
         return "<Reservation '%s')>" % self.id
