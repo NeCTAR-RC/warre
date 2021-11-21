@@ -37,7 +37,7 @@ class TestBlazar(base.TestCase):
                 start='2021-01-01 00:00', end='2021-01-02 00:00',
                 reservations=[{'resource_type': 'virtual:instance',
                                'amount': 1, 'vcpus': 4, 'memory_mb': 1024,
-                               'disk_gb': 30, 'affinity': False,
+                               'disk_gb': 30, 'affinity': None,
                                'resource_properties': None,
                                'extra_specs': {'bar': 'foo'}}],
                 events=[])
