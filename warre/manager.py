@@ -46,7 +46,7 @@ class Manager(object):
                 flavor.start)
         if flavor.end and flavor.end < reservation.end:
             raise exceptions.InvalidReservation(
-                "Reservation end time before flavor end time of %s" %
+                "Reservation end time after flavor end time of %s" %
                 flavor.end)
 
         reservations = db.session.query(models.Reservation) \
