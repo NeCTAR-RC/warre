@@ -93,6 +93,19 @@ class TestManager(base.TestCase):
                                     "start time of %s" % flavor.start):
             mgr.create_reservation(self.context, reservation)
 
+    def test_create_reservation_start_time_bad(self):
+        flavor = self.create_flavor()
+        reservation = models.Reservation(flavor_id=flavor.id,
+                                         start=datetime.datetime(2021, 1, 3),
+                                         end=datetime.datetime(2021, 1, 1))
+        mgr = manager.Manager()
+
+        with self.assertRaisesRegex(exceptions.InvalidReservation,
+                                    "Reservation start time of %s after "
+                                    "reservation end time of %s" %
+                                    (reservation.start, reservation.end)):
+            mgr.create_reservation(self.context, reservation)
+
     def test_create_reservation_no_slots(self):
         flavor = self.create_flavor(slots=1)
         reservation1 = models.Reservation(flavor_id=flavor.id,
