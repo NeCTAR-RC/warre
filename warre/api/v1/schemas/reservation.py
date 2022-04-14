@@ -11,11 +11,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from warre.api.v1.schemas import flavor
 from warre.extensions import ma
 from warre import models
 
 
 class ReservationSchema(ma.SQLAlchemyAutoSchema):
+    flavor = ma.Nested(flavor.FlavorSchema)
 
     class Meta(object):
         model = models.Reservation
