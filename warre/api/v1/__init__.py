@@ -13,6 +13,7 @@
 
 from warre.api.v1.resources import flavor
 from warre.api.v1.resources import flavorproject
+from warre.api.v1.resources import limits
 from warre.api.v1.resources import reservation
 
 
@@ -26,3 +27,5 @@ def initialize_resources(api):
 
     api.add_resource(reservation.ReservationList, '/v1/reservations/')
     api.add_resource(reservation.Reservation, '/v1/reservations/<id>/')
+
+    api.add_resource(limits.Limits, '/v1/limits/')

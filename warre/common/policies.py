@@ -151,6 +151,15 @@ flavorproject_rules = [
                      'method': 'DELETE'}]),
 ]
 
+limits_rules = [
+    policy.DocumentedRuleDefault(
+        name='warre:limits:list:all',
+        check_str='rule:%s' % ADMIN_OR_READER,
+        description='List limits for any project',
+        operations=[{'path': '/v1/limits/',
+                     'method': 'GET'}]),
+]
+
 RESERVATION_PREFIX = "warre:reservation:%s"
 
 reservation_rules = [
@@ -193,8 +202,10 @@ reservation_rules = [
 enforcer.register_defaults(base_rules)
 enforcer.register_defaults(flavor_rules)
 enforcer.register_defaults(flavorproject_rules)
+enforcer.register_defaults(limits_rules)
 enforcer.register_defaults(reservation_rules)
 
 
 def list_rules():
-    return base_rules + flavor_rules + flavorproject_rules + reservation_rules
+    return base_rules + flavor_rules + flavorproject_rules \
+        + limits_rules + reservation_rules
