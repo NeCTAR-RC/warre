@@ -18,7 +18,7 @@ from pbr.packaging import parse_requirements
 
 setuptools.setup(
     name='warre',
-    version='0.1.0',
+    version='1.0.0',
     description=('Nectar Reservation System'),
     author='Sam Morrison',
     author_email='sorrison@gmail.com',
