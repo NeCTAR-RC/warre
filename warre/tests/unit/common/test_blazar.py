@@ -14,6 +14,7 @@
 import datetime
 from unittest import mock
 
+from blazarclient import exception as blazar_exc
 from warre.common import blazar
 from warre.tests.unit import base
 
@@ -43,3 +44,34 @@ class TestBlazar(base.TestCase):
                 events=[])
 
             self.assertEqual(mock_client.lease.create.return_value, lease)
+
+    def test_delete_lease(self):
+        session = mock.Mock()
+        client = blazar.BlazarClient(session)
+        lease_id = 'fake-id'
+        with mock.patch.object(client, 'client') as mock_client:
+            client.delete_lease(lease_id)
+
+            mock_client.lease.delete.assert_called_once_with(lease_id)
+
+    def test_delete_lease_not_found(self):
+        session = mock.Mock()
+        client = blazar.BlazarClient(session)
+        lease_id = 'fake-id'
+        with mock.patch.object(client, 'client') as mock_client:
+            mock_client.lease.delete.side_effect = \
+                blazar_exc.BlazarClientException(code=404)
+            client.delete_lease(lease_id)
+
+            mock_client.lease.delete.assert_called_once_with(lease_id)
+
+    def test_delete_lease_error(self):
+        session = mock.Mock()
+        client = blazar.BlazarClient(session)
+        lease_id = 'fake-id'
+        with mock.patch.object(client, 'client') as mock_client:
+            mock_client.lease.delete.side_effect = \
+                blazar_exc.BlazarClientException(code=500)
+
+            with self.assertRaises(blazar_exc.BlazarClientException):
+                client.delete_lease(lease_id)

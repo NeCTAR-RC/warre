@@ -13,6 +13,7 @@
 
 
 from blazarclient import client as blazarclient
+from blazarclient import exception as blazar_exc
 from warre.common import keystone
 
 
@@ -45,4 +46,8 @@ class BlazarClient(object):
         return lease
 
     def delete_lease(self, lease_id):
-        self.client.lease.delete(lease_id)
+        try:
+            self.client.lease.delete(lease_id)
+        except blazar_exc.BlazarClientException as e:
+            if e.kwargs.get('code') != 404:
+                raise e
