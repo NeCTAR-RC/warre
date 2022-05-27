@@ -40,12 +40,15 @@ class Flavor(db.Model):
     extra_specs = db.Column(db.JSON)
     start = db.Column(db.DateTime())
     end = db.Column(db.DateTime())
+    category = db.Column(db.String(64))
+    availability_zone = db.Column(db.String(64))
     projects = db.relationship("FlavorProject", back_populates="flavor",
                                    lazy='dynamic', cascade="all,delete")
 
     def __init__(self, name, vcpu, memory_mb, disk_gb, description=None,
                  active=True, properties=None, max_length_hours=504, slots=1,
-                 is_public=True, extra_specs={}, start=None, end=None):
+                 is_public=True, extra_specs={}, start=None, end=None,
+                 category=None, availability_zone=None):
         self.id = uuidutils.generate_uuid()
         self.name = name
         self.description = description
@@ -60,6 +63,8 @@ class Flavor(db.Model):
         self.extra_specs = extra_specs
         self.start = start
         self.end = end
+        self.category = category
+        self.availability_zone = availability_zone
 
     def __repr__(self):
         return "<Flavor '%s', '%s')>" % (self.id, self.name)

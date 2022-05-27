@@ -60,6 +60,8 @@ class FlavorList(base.Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('limit', type=int)
         parser.add_argument('all_projects', type=bool)
+        parser.add_argument('category')
+        parser.add_argument('availability_zone')
         args = parser.parse_args()
         query = self._get_flavors()
 
@@ -68,6 +70,14 @@ class FlavorList(base.Resource):
             query = self._get_all_flavors()
         else:
             query = self._get_flavors()
+
+        if args.get('category'):
+            query = query.filter(
+                models.Flavor.category == args.get('category'))
+        az = args.get('availability_zone')
+        if az:
+            query = query.filter(
+                models.Flavor.availability_zone == az)
 
         return self.paginate(query, args)
 

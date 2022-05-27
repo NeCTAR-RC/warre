@@ -64,6 +64,27 @@ class TestFlavorAPI(base.ApiTestCase):
         results = response.get_json().get('results')
         self.assertEqual(1, len(results))
 
+    def test_flavor_list_filters(self):
+        self.create_flavor(category='foo', availability_zone='zone1')
+        self.create_flavor(category='foo', availability_zone='zone2')
+        self.create_flavor(category='bar', availability_zone='zone1')
+
+        response = self.client.get('/v1/flavors/?category=foo')
+        self.assert200(response)
+        results = response.get_json().get('results')
+        self.assertEqual(2, len(results))
+
+        response = self.client.get('/v1/flavors/?availability_zone=zone2')
+        self.assert200(response)
+        results = response.get_json().get('results')
+        self.assertEqual(1, len(results))
+
+        response = self.client.get(
+            '/v1/flavors/?category=foo&availability_zone=zone2')
+        self.assert200(response)
+        results = response.get_json().get('results')
+        self.assertEqual(1, len(results))
+
 
 class TestAdminFlavorAPI(TestFlavorAPI):
 
