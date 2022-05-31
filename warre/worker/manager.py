@@ -58,6 +58,8 @@ class Manager(object):
             LOG.exception(e)
         else:
             reservation.lease_id = lease['id']
+            reservation.compute_flavor = lease.get(
+                'reservations')[0].get('flavor_id')
             reservation.status = models.Reservation.ALLOCATED
             LOG.info("Created Blazar lease with ID %s", reservation.lease_id)
         db.session.add(reservation)

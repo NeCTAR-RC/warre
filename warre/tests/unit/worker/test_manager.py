@@ -30,7 +30,8 @@ class TestManager(base.TestCase):
             start=datetime.datetime(2021, 1, 1),
             end=datetime.datetime(2021, 1, 2))
 
-        fake_lease = {'id': 'fake-lease-id'}
+        fake_lease = {'id': 'fake-lease-id',
+                      'reservations': [{'flavor_id': 'fake-nova-flavor'}]}
         blazar_client.create_lease.return_value = fake_lease
         manager = worker_manager.Manager()
 
@@ -41,6 +42,7 @@ class TestManager(base.TestCase):
             mock_blazar.assert_called_once_with(session=session)
 
             self.assertEqual('fake-lease-id', reservation.lease_id)
+            self.assertEqual('fake-nova-flavor', reservation.compute_flavor)
             self.assertEqual('ALLOCATED', reservation.status)
 
     def test_create_lease_error(self, mock_app, mock_blazar):

@@ -105,6 +105,7 @@ class Reservation(db.Model):
                           nullable=False)
     flavor = db.relationship("Flavor")
     lease_id = db.Column(db.String(64))
+    compute_flavor = db.Column(db.String(64))
     status = db.Column(db.String(16), nullable=False)
     start = db.Column(db.DateTime(), nullable=False)
     end = db.Column(db.DateTime(), nullable=False)
