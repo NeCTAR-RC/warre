@@ -13,8 +13,6 @@
 
 from datetime import datetime
 from datetime import timedelta
-from itertools import chain
-from operator import itemgetter
 
 from flask import request
 import flask_restful
@@ -163,12 +161,6 @@ class FlavorFreeSlot(Flavor):
     schema = schemas.freeslots
 
     def get(self, id, **kwargs):
-        """Get the free slots of a flavor
-        Algorithm:
-        1. Get slots from flavor table as the total resource
-        2. Get all reservations of current flavor
-        3. Calculate the free slots
-        """
         parser = reqparse.RequestParser()
         parser.add_argument(
             'start', type=inputs.date,
@@ -189,69 +181,6 @@ class FlavorFreeSlot(Flavor):
         start = args.start
         end = args.end
 
-        if flavor.start and flavor.start > start:
-            start = flavor.start
-
-        if flavor.end and flavor.end < end:
-            end = flavor.end
-
-        reservations = db.session.query(models.Reservation) \
-            .filter(models.Reservation.end >= start) \
-            .filter(models.Reservation.start <= end) \
-            .filter(models.Reservation.status.in_(
-                (models.Reservation.ALLOCATED,
-                 models.Reservation.ACTIVE))) \
-            .filter_by(flavor_id=flavor.id).all()
-
-        # the real thing begins here
-        # Pass 1: segmentation and marking
-        # put every start, end date into a list
-        time_list = list(chain.from_iterable(
-            [(r.start, 'start'), (r.end, 'end')] for r in reservations))
-        # sort on time
-        time_list.sort(key=itemgetter(0))
-        segments = []
-        current_slot = 0
-        last_point = None
-        for point, kind in time_list:
-            if last_point is not None:
-                segments.append({
-                    "start": last_point,
-                    "end": point,
-                    "slot": current_slot
-                    })
-            # update last_point
-            last_point = point
-            # adjust current slot
-            current_slot = current_slot + 1 if kind == 'start' \
-                else current_slot - 1
-        # Pass2: only keep slot >= maximum capacity, a.k.a. busy slots
-        busy_slots = \
-            [s for s in segments if s["slot"] >= flavor.slots]
-
-        if len(busy_slots) == 0:
-            return self.schema.dump([{
-                "start": start,
-                "end": end
-                }])
-        query = []
-        start_free = start
-        # Pass3: remove busy slots
-        for s in busy_slots:
-            if s["start"] <= start <= s["end"]:
-                start_free = s["end"]
-            else:
-                if start_free < s["start"]:
-                    query.append({
-                        "start": start_free,
-                        "end": s["start"]
-                    })
-                start_free = s["end"]
-        # add the last one
-        if start_free < end:
-            query.append({
-                "start": start_free,
-                "end": end
-            })
-
-        return self.schema.dump(query)
+        free_slots = self.manager.flavor_free_slots(self.context, flavor,
+                                                    start, end)
+        return self.schema.dump(free_slots)

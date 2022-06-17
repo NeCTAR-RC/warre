@@ -11,7 +11,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import datetime
+from datetime import datetime
 from unittest import mock
 
 from warre.common import exceptions
@@ -28,16 +28,16 @@ class TestManager(base.TestCase):
         # Create some data to muddy the waters
         self.flavor = self.create_flavor()
         self.create_reservation(flavor_id=self.flavor.id,
-                                start=datetime.datetime(2020, 1, 1),
-                                end=datetime.datetime(2020, 1, 2))
+                                start=datetime(2020, 1, 1),
+                                end=datetime(2020, 1, 2))
 
     @mock.patch('warre.worker.api.WorkerAPI')
     def test_create_reservation(self, mock_worker):
         worker = mock_worker.return_value
         flavor = self.create_flavor()
         reservation = models.Reservation(flavor_id=flavor.id,
-                                         start=datetime.datetime(2021, 1, 1),
-                                         end=datetime.datetime(2021, 1, 2))
+                                         start=datetime(2021, 1, 1),
+                                         end=datetime(2021, 1, 2))
         mgr = manager.Manager()
         reservation = mgr.create_reservation(self.context, reservation)
 
@@ -50,8 +50,8 @@ class TestManager(base.TestCase):
     def test_create_reservation_flavor_not_active(self):
         flavor = self.create_flavor(active=False)
         reservation = models.Reservation(flavor_id=flavor.id,
-                                         start=datetime.datetime(2021, 1, 1),
-                                         end=datetime.datetime(2021, 1, 2))
+                                         start=datetime(2021, 1, 1),
+                                         end=datetime(2021, 1, 2))
         mgr = manager.Manager()
 
         with self.assertRaisesRegex(exceptions.InvalidReservation,
@@ -61,8 +61,8 @@ class TestManager(base.TestCase):
     def test_create_reservation_flavor_private(self):
         flavor = self.create_flavor(is_public=False)
         reservation = models.Reservation(flavor_id=flavor.id,
-                                         start=datetime.datetime(2021, 1, 1),
-                                         end=datetime.datetime(2021, 1, 2))
+                                         start=datetime(2021, 1, 1),
+                                         end=datetime(2021, 1, 2))
         mgr = manager.Manager()
 
         with self.assertRaisesRegex(exceptions.InvalidReservation,
@@ -70,10 +70,10 @@ class TestManager(base.TestCase):
             mgr.create_reservation(self.context, reservation)
 
     def test_create_reservation_flavor_end_time_bad(self):
-        flavor = self.create_flavor(end=datetime.datetime(2021, 1, 2))
+        flavor = self.create_flavor(end=datetime(2021, 1, 2))
         reservation = models.Reservation(flavor_id=flavor.id,
-                                         start=datetime.datetime(2021, 1, 1),
-                                         end=datetime.datetime(2021, 1, 3))
+                                         start=datetime(2021, 1, 1),
+                                         end=datetime(2021, 1, 3))
         mgr = manager.Manager()
 
         with self.assertRaisesRegex(exceptions.InvalidReservation,
@@ -82,10 +82,10 @@ class TestManager(base.TestCase):
             mgr.create_reservation(self.context, reservation)
 
     def test_create_reservation_flavor_start_time_bad(self):
-        flavor = self.create_flavor(start=datetime.datetime(2021, 1, 2))
+        flavor = self.create_flavor(start=datetime(2021, 1, 2))
         reservation = models.Reservation(flavor_id=flavor.id,
-                                         start=datetime.datetime(2021, 1, 1),
-                                         end=datetime.datetime(2021, 1, 3))
+                                         start=datetime(2021, 1, 1),
+                                         end=datetime(2021, 1, 3))
         mgr = manager.Manager()
 
         with self.assertRaisesRegex(exceptions.InvalidReservation,
@@ -96,8 +96,8 @@ class TestManager(base.TestCase):
     def test_create_reservation_start_time_bad(self):
         flavor = self.create_flavor()
         reservation = models.Reservation(flavor_id=flavor.id,
-                                         start=datetime.datetime(2021, 1, 3),
-                                         end=datetime.datetime(2021, 1, 1))
+                                         start=datetime(2021, 1, 3),
+                                         end=datetime(2021, 1, 1))
         mgr = manager.Manager()
 
         with self.assertRaisesRegex(exceptions.InvalidReservation,
@@ -109,15 +109,15 @@ class TestManager(base.TestCase):
     def test_create_reservation_no_slots(self):
         flavor = self.create_flavor(slots=1)
         reservation1 = models.Reservation(flavor_id=flavor.id,
-                                         start=datetime.datetime(2020, 1, 1),
-                                         end=datetime.datetime(2020, 1, 2),
+                                         start=datetime(2020, 1, 1),
+                                         end=datetime(2020, 1, 2),
                                          status=models.Reservation.ALLOCATED)
         mgr = manager.Manager()
         mgr.create_reservation(self.context, reservation1)
         # Create another reservation with same time slot
         reservation2 = models.Reservation(flavor_id=flavor.id,
-                                          start=datetime.datetime(2020, 1, 1),
-                                          end=datetime.datetime(2020, 1, 2))
+                                          start=datetime(2020, 1, 1),
+                                          end=datetime(2020, 1, 2))
 
         with self.assertRaisesRegex(exceptions.InvalidReservation,
                                     "No capacity"):
@@ -130,8 +130,8 @@ class TestManager(base.TestCase):
         reservations_pre = db.session.query(models.Reservation).all()
         reservation = self.create_reservation(
             flavor_id=flavor.id,
-            start=datetime.datetime(2021, 1, 1),
-            end=datetime.datetime(2021, 1, 2))
+            start=datetime(2021, 1, 1),
+            end=datetime(2021, 1, 2))
 
         mgr = manager.Manager()
         mgr.delete_reservation(self.context, reservation)
@@ -146,8 +146,8 @@ class TestManager(base.TestCase):
         reservations_pre = db.session.query(models.Reservation).all()
         reservation = self.create_reservation(
             flavor_id=flavor.id,
-            start=datetime.datetime(2021, 1, 1),
-            end=datetime.datetime(2021, 1, 2))
+            start=datetime(2021, 1, 1),
+            end=datetime(2021, 1, 2))
         reservation.lease_id = 'foobar'
         db.session.add(reservation)
         db.session.commit()
@@ -172,3 +172,165 @@ class TestManager(base.TestCase):
         with self.assertRaisesRegex(exceptions.FlavorInUse,
                 f"Flavor {self.flavor.id} is in use"):
             mgr.delete_flavor(self.context, self.flavor)
+
+
+class TestFlavorFreeSlots(base.TestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.one_slot_flavor = self.create_flavor()
+        self.two_slot_flavor = self.create_flavor(slots=2)
+        self.mgr = manager.Manager()
+
+    def test_one_slot_two_reservations(self):
+        self.create_reservation(flavor_id=self.one_slot_flavor.id,
+                                status=models.Reservation.ALLOCATED,
+                                start=datetime(2021, 2, 1),
+                                end=datetime(2021, 3, 1))
+        self.create_reservation(flavor_id=self.one_slot_flavor.id,
+                                status=models.Reservation.ALLOCATED,
+                                start=datetime(2021, 5, 1),
+                                end=datetime(2021, 6, 1))
+
+        start = datetime(2021, 1, 1)
+        end = datetime(2022, 1, 1)
+
+        slots = self.mgr.flavor_free_slots(self.context, self.one_slot_flavor,
+                                           start, end)
+        self.assertEqual(3, len(slots))
+
+    def test_one_slot_one_reservation(self):
+        self.create_reservation(flavor_id=self.one_slot_flavor.id,
+                                status=models.Reservation.ALLOCATED,
+                                start=datetime(2021, 2, 1),
+                                end=datetime(2021, 3, 1))
+        start = datetime(2021, 1, 1)
+        end = datetime(2022, 1, 1)
+
+        slots = self.mgr.flavor_free_slots(self.context, self.one_slot_flavor,
+                                           start, end)
+        self.assertEqual(2, len(slots))
+
+    def test_continious_reservations(self):
+        self.create_reservation(flavor_id=self.one_slot_flavor.id,
+                                status=models.Reservation.ALLOCATED,
+                                start=datetime(2021, 2, 1),
+                                end=datetime(2021, 3, 1))
+        self.create_reservation(flavor_id=self.one_slot_flavor.id,
+                                status=models.Reservation.ALLOCATED,
+                                start=datetime(2021, 3, 1),
+                                end=datetime(2021, 4, 1))
+        start = datetime(2021, 1, 1)
+        end = datetime(2022, 1, 1)
+
+        slots = self.mgr.flavor_free_slots(self.context, self.one_slot_flavor,
+                                           start, end)
+        self.assertEqual(2, len(slots))
+
+    def test_two_slots_one_reservation(self):
+        self.create_reservation(flavor_id=self.two_slot_flavor.id,
+                                status=models.Reservation.ALLOCATED,
+                                start=datetime(2021, 2, 1),
+                                end=datetime(2021, 3, 1))
+        start = datetime(2021, 1, 1)
+        end = datetime(2022, 1, 1)
+
+        slots = self.mgr.flavor_free_slots(self.context, self.two_slot_flavor,
+                                           start, end)
+
+        self.assertEqual(1, len(slots))
+        self.assertEqual(start, slots[0]['start'])
+        self.assertEqual(end, slots[0]['end'])
+
+    def test_two_slots_two_reservations(self):
+        self.create_reservation(flavor_id=self.two_slot_flavor.id,
+                                status=models.Reservation.ALLOCATED,
+                                start=datetime(2021, 2, 1),
+                                end=datetime(2021, 3, 1))
+        self.create_reservation(flavor_id=self.two_slot_flavor.id,
+                                status=models.Reservation.ALLOCATED,
+                                start=datetime(2021, 5, 1),
+                                end=datetime(2021, 6, 1))
+        start = datetime(2021, 1, 1)
+        end = datetime(2022, 1, 1)
+
+        slots = self.mgr.flavor_free_slots(self.context, self.two_slot_flavor,
+                                           start, end)
+        self.assertEqual(1, len(slots))
+        self.assertEqual(start, slots[0]['start'])
+        self.assertEqual(end, slots[0]['end'])
+
+    def test_two_slots_overlapping_reservations(self):
+        self.create_reservation(flavor_id=self.two_slot_flavor.id,
+                                status=models.Reservation.ALLOCATED,
+                                start=datetime(2021, 2, 1),
+                                end=datetime(2021, 3, 1))
+        self.create_reservation(flavor_id=self.two_slot_flavor.id,
+                                status=models.Reservation.ALLOCATED,
+                                start=datetime(2021, 2, 10),
+                                end=datetime(2021, 3, 10))
+        start = datetime(2021, 1, 1)
+        end = datetime(2022, 1, 1)
+
+        slots = self.mgr.flavor_free_slots(self.context, self.two_slot_flavor,
+                                           start, end)
+        self.assertEqual(2, len(slots))
+        self.assertEqual(datetime(2021, 2, 9, 23, 59), slots[0]['end'])
+        self.assertEqual(datetime(2021, 3, 1, 0, 1), slots[1]['start'])
+
+    def test_querystring_shorter(self):
+        self.create_reservation(flavor_id=self.one_slot_flavor.id,
+                                status=models.Reservation.ALLOCATED,
+                                start=datetime(2021, 2, 1),
+                                end=datetime(2021, 10, 1))
+        start = datetime(2021, 5, 1)
+        end = datetime(2021, 9, 1)
+
+        slots = self.mgr.flavor_free_slots(self.context, self.one_slot_flavor,
+                                           start, end)
+        self.assertEqual(0, len(slots))
+
+    def test_querystring_overlapping(self):
+        self.create_reservation(flavor_id=self.one_slot_flavor.id,
+                                status=models.Reservation.ALLOCATED,
+                                start=datetime(2021, 2, 1),
+                                end=datetime(2021, 10, 1))
+        start = datetime(2021, 5, 1)
+        end = datetime(2022, 1, 1)
+
+        slots = self.mgr.flavor_free_slots(self.context, self.one_slot_flavor,
+                                           start, end)
+        self.assertEqual(1, len(slots))
+        self.assertEqual(datetime(2021, 10, 1, 0, 1), slots[0]['start'])
+        self.assertEqual(datetime(2022, 1, 1, 0), slots[0]['end'])
+
+    def test_minutes_reservations(self):
+        self.create_reservation(flavor_id=self.two_slot_flavor.id,
+                                status=models.Reservation.ALLOCATED,
+                                start=datetime(2021, 2, 1, 11),
+                                end=datetime(2021, 2, 1, 20))
+        self.create_reservation(flavor_id=self.two_slot_flavor.id,
+                                status=models.Reservation.ALLOCATED,
+                                start=datetime(2021, 2, 1, 16),
+                                end=datetime(2021, 2, 1, 22))
+        start = datetime(2021, 2, 1)
+        end = datetime(2022, 2, 2)
+
+        slots = self.mgr.flavor_free_slots(self.context, self.two_slot_flavor,
+                                           start, end)
+        self.assertEqual(2, len(slots))
+        self.assertEqual(datetime(2021, 2, 1, 15, 59), slots[0]['end'])
+        self.assertEqual(datetime(2021, 2, 1, 20, 1), slots[1]['start'])
+
+    def test_flavor_start_end(self):
+        start = datetime(2021, 1, 10)
+        end = datetime(2021, 1, 20)
+        flavor = self.create_flavor(start=start, end=end)
+        start = datetime(2021, 1, 1)
+        end = datetime(2022, 3, 1)
+
+        slots = self.mgr.flavor_free_slots(self.context, flavor,
+                                           start, end)
+
+        self.assertEqual(datetime(2021, 1, 10, 0, 0), slots[0]['start'])
+        self.assertEqual(datetime(2021, 1, 20, 0, 0), slots[0]['end'])

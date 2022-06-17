@@ -11,12 +11,20 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import datetime
+from itertools import chain
+from operator import itemgetter
+
+from oslo_log import log as logging
 
 from warre.common import blazar
 from warre.common import exceptions
 from warre.extensions import db
 from warre import models
 from warre.worker import api as worker_api
+
+
+LOG = logging.getLogger(__name__)
 
 
 class Manager(object):
@@ -85,3 +93,88 @@ class Manager(object):
             raise exceptions.FlavorInUse(f'Flavor {flavor.id} is in use')
         db.session.delete(flavor)
         db.session.commit()
+
+    def flavor_free_slots(self, context, flavor, start, end, reservation=None):
+        """Get the free slots of a flavor
+        Algorithm:
+        1. Get slots from flavor table as the total resource
+        2. Get all reservations of current flavor
+        3. Calculate the free slots
+
+        reservation - used to exclude an existing reservation when extending
+        """
+        if flavor.start and flavor.start > start:
+            start = flavor.start
+
+        if flavor.end and flavor.end < end:
+            end = flavor.end
+
+        query = db.session.query(models.Reservation) \
+                          .filter(models.Reservation.end >= start) \
+                          .filter(models.Reservation.start <= end) \
+                          .filter(models.Reservation.status.in_(
+                              (models.Reservation.ALLOCATED,
+                               models.Reservation.ACTIVE))) \
+                          .filter_by(flavor_id=flavor.id)
+        if reservation:
+            query = query.filter(models.Reservation.id != reservation.id)
+        reservations = query.all()
+
+        # the real thing begins here
+        # Pass 1: segmentation and marking
+        # put every start, end date into a list
+        time_list = list(chain.from_iterable(
+            [(r.start, 'start'), (r.end, 'end')] for r in reservations))
+        # sort on time
+        time_list.sort(key=itemgetter(0))
+        segments = []
+        current_slot = 0
+        last_point = None
+        for point, kind in time_list:
+            if last_point is not None:
+                segments.append({
+                    "start": last_point,
+                    "end": point,
+                    "slot": current_slot
+                    })
+            # update last_point
+            last_point = point
+            # adjust current slot
+            current_slot = current_slot + 1 if kind == 'start' \
+                else current_slot - 1
+        # Pass2: only keep slot >= maximum capacity, a.k.a. busy slots
+        busy_slots = \
+            [s for s in segments if s["slot"] >= flavor.slots]
+
+        if len(busy_slots) == 0:
+            return [{
+                "start": start,
+                "end": end
+                }]
+        free_slots = []
+        start_free = start
+        # Pass3: remove busy slots
+        for s in busy_slots:
+            if s["start"] <= start <= s["end"]:
+                start_free = s["end"]
+            else:
+                diff = (s["start"] - start_free).total_seconds()
+                if start_free < s["start"] and diff > 60:
+                    if start_free != start:
+                        start_free += datetime.timedelta(seconds=60)
+                    free_slots.append({
+                        "start": start_free,
+                        "end": (s["start"] - datetime.timedelta(
+                            seconds=1)).replace(second=0)
+                    })
+                start_free = s["end"]
+        # add the last one
+        if start_free < end:
+            if start_free != start:
+                start_free += datetime.timedelta(seconds=60)
+            free_slots.append({
+                "start": start_free,
+                "end": end
+            })
+
+        return free_slots
