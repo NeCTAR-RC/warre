@@ -26,10 +26,10 @@ class Limits(base.Resource):
 
     def get(self, **kwargs):
         parser = reqparse.RequestParser()
-        parser.add_argument('project-id')
+        parser.add_argument('project_id')
         args = parser.parse_args()
 
-        if args.get('project-id'):
+        if args.get('project_id'):
             try:
                 self.authorize('list:all')
             except policy.PolicyNotAuthorized:

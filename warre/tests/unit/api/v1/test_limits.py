@@ -38,7 +38,7 @@ class TestLimitsAPI(base.ApiTestCase):
         self.assertEqual(expected, results)
 
     def test_limits_list_project(self):
-        response = self.client.get('/v1/limits/?project-id=123')
+        response = self.client.get('/v1/limits/?project_id=123')
         self.assert403(response)
 
 
@@ -48,5 +48,5 @@ class TestAdminLimitsAPI(TestLimitsAPI):
 
     @mock.patch('warre.quota.get_enforcer')
     def test_limits_list_project(self, mock_get_enforer):
-        response = self.client.get('/v1/limits/?project-id=123')
+        response = self.client.get('/v1/limits/?project_id=123')
         self.assert200(response)
