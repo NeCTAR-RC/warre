@@ -18,6 +18,8 @@ import oslo_messaging as messaging
 from sqlalchemy import exc as s_exc
 
 from warre import app
+from warre.common import notifications
+from warre.common import rpc
 from warre.extensions import db
 from warre import models
 
@@ -38,6 +40,7 @@ class NotificationEndpoints(object):
 
     def __init__(self):
         self.app = app.create_app(init_config=False)
+        self.notifier = rpc.get_notifier()
 
     def sample(self, ctxt, publisher_id, event_type, payload, metadata):
         try:
@@ -45,9 +48,9 @@ class NotificationEndpoints(object):
             traits = {d[0]: d[2] for d in payload[0]['traits']}
             event_type = payload[0].get('event_type')
             if event_type == 'lease.event.end_lease':
-                self._lease_end(traits['lease_id'])
+                self._lease_end(ctxt, traits['lease_id'])
             elif event_type == 'lease.event.start_lease':
-                self._lease_start(traits['lease_id'])
+                self._lease_start(ctxt, traits['lease_id'])
             else:
                 LOG.debug("Received unhandled event %s", event_type)
         except Exception:
@@ -55,14 +58,14 @@ class NotificationEndpoints(object):
 
         return messaging.NotificationResult.HANDLED
 
-    def _lease_end(self, lease_id):
-        self._update_lease(lease_id, models.Reservation.COMPLETE)
+    def _lease_end(self, ctxt, lease_id):
+        self._update_lease(ctxt, lease_id, models.Reservation.COMPLETE, 'end')
 
-    def _lease_start(self, lease_id):
-        self._update_lease(lease_id, models.Reservation.ACTIVE)
+    def _lease_start(self, ctxt, lease_id):
+        self._update_lease(ctxt, lease_id, models.Reservation.ACTIVE, 'start')
 
     @app_context
-    def _update_lease(self, lease_id, status):
+    def _update_lease(self, ctxt, lease_id, status, event):
         try:
             reservation = db.session.query(models.Reservation) \
                 .filter_by(lease_id=lease_id).one()
@@ -72,4 +75,8 @@ class NotificationEndpoints(object):
             reservation.status = status
             db.session.add(reservation)
             db.session.commit()
+
+            self.notifier.info(ctxt, f'warre.reservation.{event}',
+                               notifications.format_reservation(reservation))
+
             LOG.info("Updated reservation %s to %s", reservation.id, status)

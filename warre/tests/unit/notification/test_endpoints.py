@@ -20,14 +20,25 @@ from warre.notification import endpoints
 from warre.tests.unit import base
 
 
+@mock.patch('warre.common.rpc.get_notifier')
 @mock.patch('warre.app.create_app')
 class TestEndpoints(base.TestCase):
 
-    def test_sample_start(self, mock_app):
+    def test_sample_start(self, mock_app, mock_get_notifier):
         self._test_sample('lease.event.start_lease', models.Reservation.ACTIVE)
+        notifier = mock_get_notifier.return_value
+        notifier.info.assert_called_once_with(
+            self.context,
+            'warre.reservation.start',
+            mock.ANY)
 
-    def test_sample_end(self, mock_app):
+    def test_sample_end(self, mock_app, mock_get_notifier):
         self._test_sample('lease.event.end_lease', models.Reservation.COMPLETE)
+        notifier = mock_get_notifier.return_value
+        notifier.info.assert_called_once_with(
+            self.context,
+            'warre.reservation.end',
+            mock.ANY)
 
     def _test_sample(self, event, status):
         lease_id = 'test-lease-id'
@@ -65,7 +76,7 @@ class TestEndpoints(base.TestCase):
         reservation = db.session.query(models.Reservation).get(reservation.id)
         self.assertEqual(status, reservation.status)
 
-    def test_update_lease_unknown(self, mock_app):
+    def test_update_lease_unknown(self, mock_app, mock_get_notifier):
         lease_id = 'test-lease-id'
 
         flavor = self.create_flavor()
@@ -80,5 +91,8 @@ class TestEndpoints(base.TestCase):
 
         ep = endpoints.NotificationEndpoints()
         self.assertEqual(models.Reservation.ALLOCATED, reservation.status)
-        ep._update_lease('bogus-id', models.Reservation.ACTIVE)
+        ep._update_lease(self.context, 'bogus-id', models.Reservation.ACTIVE,
+                         'end')
         self.assertEqual(models.Reservation.ALLOCATED, reservation.status)
+        notifier = mock_get_notifier.return_value
+        notifier.info.assert_not_called()
