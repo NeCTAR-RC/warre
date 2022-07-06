@@ -88,6 +88,46 @@ class Manager(object):
         db.session.delete(reservation)
         db.session.commit()
 
+    def extend_reservation(self, context, reservation, new_end):
+        if not reservation.lease_id:
+            raise exceptions.InvalidReservation("No lease")
+
+        if reservation.status != models.Reservation.ACTIVE:
+            raise exceptions.InvalidReservation(
+                "Reservation must be in ACTIVE state")
+
+        now = datetime.datetime.now()
+        if (new_end - reservation.end > now - reservation.start):
+            raise exceptions.InvalidReservation(
+                "Reservation is too long, max allowed is %s hours" %
+                reservation.flavor.max_length_hours)
+
+        free_slots = self.flavor_free_slots(
+            context, reservation.flavor, reservation.end,
+            new_end, reservation)
+
+        if free_slots:
+            f_start = free_slots[0].get('start')
+            f_end = free_slots[0].get('end')
+            if f_start != reservation.end or f_end < new_end:
+                raise exceptions.InvalidReservation("No capacity")
+        else:
+            raise exceptions.InvalidReservation("No capacity")
+
+        reservation.end = new_end
+
+        try:
+            self.blazar.update_lease(reservation.lease_id,
+                                     end_date=reservation.end)
+        except Exception as e:
+            LOG.exception(e)
+            raise exceptions.InvalidReservation("Failed to extend lease")
+        else:
+            db.session.add(reservation)
+            db.session.commit()
+            LOG.info(f"Updated {reservation}")
+            return reservation
+
     def delete_flavor(self, context, flavor):
         reservations = db.session.query(models.Reservation) \
             .filter_by(flavor_id=flavor.id).all()
@@ -124,7 +164,6 @@ class Manager(object):
         if reservation:
             query = query.filter(models.Reservation.id != reservation.id)
         reservations = query.all()
-
         # the real thing begins here
         # Pass 1: segmentation and marking
         # out every start, end date into a list

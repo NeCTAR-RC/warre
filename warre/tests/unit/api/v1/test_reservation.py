@@ -14,6 +14,7 @@
 import datetime
 from unittest import mock
 
+from warre import models
 from warre.tests.unit import base
 
 
@@ -108,6 +109,59 @@ class TestReservationAPI(base.ApiTestCase):
         self.assertEqual(reservation.id, reservation_json.get('id'))
         self.assertEqual(reservation.flavor.id,
                          reservation_json['flavor']['id'])
+
+    def test_update_reservation_invalid_new_end(self):
+        reservation = self.create_reservation(
+            flavor_id=self.flavor.id,
+            start=datetime.datetime(2021, 1, 1, 0, 0),
+            end=datetime.datetime(2021, 1, 2, 23, 59))
+        reservation.lease_id = 'foo'
+
+        data = {'end': '2021-01-01 23:59'}
+        response = self.client.patch(f'/v1/reservations/{reservation.id}/',
+                                     json=data)
+        self.assert400(response)
+
+    @mock.patch('warre.common.blazar.BlazarClient')
+    def test_update_reservation(self, mock_blazar):
+        reservation = self.create_reservation(
+            status=models.Reservation.ACTIVE,
+            flavor_id=self.flavor.id,
+            start=datetime.datetime(2021, 1, 1, 0, 0),
+            end=datetime.datetime(2021, 1, 2, 23, 59))
+        reservation.lease_id = 'foo'
+
+        data = {'end': '2021-01-03 23:59'}
+        response = self.client.patch(f'/v1/reservations/{reservation.id}/',
+                                     json=data)
+        self.assert200(response)
+        reservation_json = response.get_json()
+        self.assertEqual('2021-01-01T00:00:00', reservation_json.get('start'))
+        self.assertEqual('2021-01-03T23:59:00', reservation_json.get('end'))
+
+    @mock.patch('warre.common.blazar.BlazarClient')
+    def test_update_reservation_no_capacity(self, mock_blazar):
+        reservation = self.create_reservation(
+            status=models.Reservation.ACTIVE,
+            flavor_id=self.flavor.id,
+            start=datetime.datetime(2021, 1, 1, 0, 0),
+            end=datetime.datetime(2021, 1, 2, 23, 59))
+        reservation.lease_id = 'foo'
+
+        # Create a reservation directly after
+        self.create_reservation(
+            status=models.Reservation.ALLOCATED,
+            flavor_id=self.flavor.id,
+            start=datetime.datetime(2021, 1, 3, 0, 0),
+            end=datetime.datetime(2021, 1, 4, 23, 59))
+
+        data = {'end': '2021-01-03 23:59'}
+        response = self.client.patch(f'/v1/reservations/{reservation.id}/',
+                                     json=data)
+        self.assert401(response)
+        reservation_json = response.get_json()
+        self.assertEqual('Failed to extend reservation: No capacity',
+                         reservation_json.get('error_message'))
 
 
 class TestAdminReservationAPI(TestReservationAPI):

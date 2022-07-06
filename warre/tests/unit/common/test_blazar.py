@@ -76,3 +76,15 @@ class TestBlazar(base.TestCase):
 
             with self.assertRaises(blazar_exc.BlazarClientException):
                 client.delete_lease(lease_id)
+
+    def test_update_lease(self):
+        session = mock.Mock()
+        client = blazar.BlazarClient(session)
+        lease_id = 'fake-id'
+        with mock.patch.object(client, 'client') as mock_client:
+            client.update_lease(lease_id,
+                                end_date=datetime.datetime(2022, 1, 1, 23, 59),
+                                foo='bar')
+
+            mock_client.lease.update.assert_called_once_with(
+                lease_id, end_date='2022-01-01 23:59', foo='bar')

@@ -14,6 +14,8 @@
 from datetime import datetime
 from unittest import mock
 
+from freezegun import freeze_time
+
 from warre.common import exceptions
 from warre.extensions import db
 from warre import manager
@@ -176,6 +178,129 @@ class TestManager(base.TestCase):
             reservation.lease_id)
         reservations = db.session.query(models.Reservation).all()
         self.assertEqual(reservations_pre, reservations)
+
+    @mock.patch('warre.common.blazar.BlazarClient')
+    def test_extend_reservation(self, mock_blazar):
+        blazar_client = mock_blazar.return_value
+        flavor = self.create_flavor()
+        reservation = self.create_reservation(
+            status=models.Reservation.ACTIVE,
+            flavor_id=flavor.id,
+            start=datetime(2021, 1, 1),
+            end=datetime(2021, 1, 2))
+        reservation.lease_id = 'foobar'
+        self.create_reservation(
+            status=models.Reservation.ALLOCATED,
+            flavor_id=flavor.id,
+            start=datetime(2021, 1, 5),
+            end=datetime(2021, 1, 7))
+
+        new_end = datetime(2021, 1, 3)
+        mgr = manager.Manager()
+        reservation = mgr.extend_reservation(
+            self.context, reservation, new_end)
+        reservation_db = db.session.query(
+            models.Reservation).get(reservation.id)
+
+        self.assertEqual(new_end, reservation.end)
+        self.assertEqual(reservation_db, reservation)
+        blazar_client.update_lease.assert_called_once_with(
+            'foobar', end_date=new_end)
+
+    @mock.patch('warre.common.blazar.BlazarClient')
+    def test_extend_reservation_blazar_error(self, mock_blazar):
+        blazar_client = mock_blazar.return_value
+        flavor = self.create_flavor()
+        reservation = self.create_reservation(
+            status=models.Reservation.ACTIVE,
+            flavor_id=flavor.id,
+            start=datetime(2021, 1, 1),
+            end=datetime(2021, 1, 2))
+        reservation.lease_id = 'foobar'
+
+        new_end = datetime(2021, 1, 3)
+        mgr = manager.Manager()
+        blazar_client.update_lease.side_effect = Exception
+        with self.assertRaisesRegex(exceptions.InvalidReservation,
+                                "Failed to extend lease"):
+            reservation = mgr.extend_reservation(
+                self.context, reservation, new_end)
+
+    def test_extend_reservation_no_lease(self):
+        flavor = self.create_flavor()
+        reservation = self.create_reservation(
+            status=models.Reservation.ACTIVE,
+            flavor_id=flavor.id,
+            start=datetime(2021, 1, 1),
+            end=datetime(2021, 1, 2))
+
+        new_end = datetime(2021, 1, 6)
+        mgr = manager.Manager()
+        with self.assertRaisesRegex(exceptions.InvalidReservation,
+                                    "No lease"):
+            reservation = mgr.extend_reservation(
+                self.context, reservation, new_end)
+
+    def test_extend_reservation_flavor_end(self):
+        flavor = self.create_flavor(end=datetime(2021, 1, 5))
+        reservation = self.create_reservation(
+            status=models.Reservation.ACTIVE,
+            flavor_id=flavor.id,
+            start=datetime(2021, 1, 1),
+            end=datetime(2021, 1, 2))
+        reservation.lease_id = 'foobar'
+
+        new_end = datetime(2021, 1, 6)
+        mgr = manager.Manager()
+        with self.assertRaisesRegex(exceptions.InvalidReservation,
+                                    "No capacity"):
+            reservation = mgr.extend_reservation(
+                self.context, reservation, new_end)
+
+    @freeze_time('2021-01-25')
+    def test_extend_reservation_too_long(self):
+        flavor = self.create_flavor(max_length_hours=48)
+        reservation = self.create_reservation(
+            status=models.Reservation.ACTIVE,
+            flavor_id=flavor.id,
+            start=datetime(2021, 1, 24),
+            end=datetime(2021, 1, 26))
+        reservation.lease_id = 'foobar'
+
+        new_end = datetime(2021, 1, 28)
+        mgr = manager.Manager()
+        with self.assertRaisesRegex(exceptions.InvalidReservation,
+                "Reservation is too long, max allowed is 48 hours"):
+            reservation = mgr.extend_reservation(
+                self.context, reservation, new_end)
+
+    def test_extend_reservation_no_capacity(self):
+        flavor = self.create_flavor()
+        reservation = self.create_reservation(
+            status=models.Reservation.ACTIVE,
+            flavor_id=flavor.id,
+            start=datetime(2021, 1, 1),
+            end=datetime(2021, 1, 2))
+        reservation.lease_id = 'foobar'
+        self.create_reservation(
+            status=models.Reservation.ALLOCATED,
+            flavor_id=flavor.id,
+            start=datetime(2021, 1, 4),
+            end=datetime(2021, 1, 5))
+
+        mgr = manager.Manager()
+        with self.assertRaisesRegex(exceptions.InvalidReservation,
+                                    "No capacity"):
+            new_end = datetime(2021, 1, 5)
+            mgr.extend_reservation(self.context, reservation, new_end)
+        with self.assertRaisesRegex(exceptions.InvalidReservation,
+                                    "No capacity"):
+            new_end = datetime(2021, 1, 6)
+            mgr.extend_reservation(self.context, reservation, new_end)
+        with self.assertRaisesRegex(exceptions.InvalidReservation,
+                                    "No capacity"):
+            new_end = datetime(2021, 1, 7)
+            mgr.extend_reservation(self.context, reservation, new_end)
 
     def test_delete_flavor(self):
         flavors_pre = db.session.query(models.Flavor).all()
@@ -389,3 +514,20 @@ class TestFlavorFreeSlots(base.TestCase):
         self.assertEqual(2, len(slots))
         self.assertEqual(datetime(2021, 2, 16, 23, 59), slots[0]['end'])
         self.assertEqual(datetime(2021, 2, 20, 0, 1), slots[1]['start'])
+
+    def test_one_slot_ignore_self(self):
+        reservation = self.create_reservation(
+            flavor_id=self.one_slot_flavor.id,
+            status=models.Reservation.ALLOCATED,
+            start=datetime(2021, 2, 1),
+            end=datetime(2021, 3, 1))
+
+        start = datetime(2021, 1, 1)
+        end = datetime(2022, 1, 1)
+
+        slots = self.mgr.flavor_free_slots(self.context, self.one_slot_flavor,
+                                           start, end, reservation=reservation)
+
+        self.assertEqual(1, len(slots))
+        self.assertEqual(start, slots[0]['start'])
+        self.assertEqual(end, slots[0]['end'])

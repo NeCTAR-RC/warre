@@ -17,6 +17,9 @@ from blazarclient import exception as blazar_exc
 from warre.common import keystone
 
 
+LEASE_DATE_FORMAT = "%Y-%m-%d %H:%M"
+
+
 class BlazarClient(object):
 
     def __init__(self, session=None):
@@ -39,8 +42,8 @@ class BlazarClient(object):
             'extra_specs': reservation.flavor.extra_specs,
         }
         name = 'Reservation %s' % reservation.id
-        start = reservation.start.strftime('%Y-%m-%d %H:%M')
-        end = reservation.end.strftime('%Y-%m-%d %H:%M')
+        start = reservation.start.strftime(LEASE_DATE_FORMAT)
+        end = reservation.end.strftime(LEASE_DATE_FORMAT)
         lease = self.client.lease.create(
             name=name, start=start, end=end,
             reservations=[reservation_info], events=[])
@@ -52,3 +55,8 @@ class BlazarClient(object):
         except blazar_exc.BlazarClientException as e:
             if e.kwargs.get('code') != 404:
                 raise e
+
+    def update_lease(self, lease_id, **kwargs):
+        if 'end_date' in kwargs:
+            kwargs['end_date'] = kwargs['end_date'].strftime(LEASE_DATE_FORMAT)
+        self.client.lease.update(lease_id, **kwargs)

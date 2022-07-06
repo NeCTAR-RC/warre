@@ -11,6 +11,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import math
+
 from flask import request
 import flask_restful
 from flask_restful import reqparse
@@ -133,3 +135,48 @@ class Reservation(base.Resource):
 
         self.manager.delete_reservation(self.context, reservation)
         return '', 204
+
+    def patch(self, id):
+        reservation = self._get_reservation(id)
+        data = request.get_json()
+
+        errors = schemas.reservationupdate.validate(data)
+        if errors:
+            flask_restful.abort(400, message=errors)
+
+        target = {'project_id': reservation.project_id}
+        try:
+            self.authorize('update', target)
+        except policy.PolicyNotAuthorized:
+            flask_restful.abort(
+                404, message="Reservation {} doesn't exist".format(id))
+
+        new_reservation = schemas.reservationupdate.load(data)
+        new_end = new_reservation.get('end')
+
+        if new_end <= reservation.end:
+            flask_restful.abort(
+                400,
+                message="New end date must be greater then existing")
+
+        prolong_hours = math.ceil(
+            (new_end - reservation.end).total_seconds() / 3600)
+
+        try:
+            self.check_limit('hours', prolong_hours)
+        except limit_exceptions.ProjectOverLimit as e:
+            return {'error_message': str(e)}, 413
+
+        try:
+            reservation = self.manager.extend_reservation(
+                self.context, reservation, new_end)
+        except exceptions.InvalidReservation as err:
+            LOG.info("Failed to extend reservation: %s", err)
+            return {'error_message':
+                    f'Failed to extend reservation: {err}'}, 401
+        except Exception as err:
+            LOG.error("Failed to extend reservation")
+            LOG.exception(err)
+            return {'error_message': 'Unexpected API Error.'}, 500
+
+        return self.schema.dump(reservation)

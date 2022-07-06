@@ -35,6 +35,13 @@ class ReservationCreateSchema(ma.SQLAlchemyAutoSchema):
                    'status', 'lease_id')
 
 
+class ReservationUpdateSchema(ma.SQLAlchemyAutoSchema):
+    class Meta(object):
+        model = models.Reservation
+        fields = ('end',)
+
+
 reservation = ReservationSchema()
 reservations = ReservationSchema(many=True)
 reservationcreate = ReservationCreateSchema()
+reservationupdate = ReservationUpdateSchema()
