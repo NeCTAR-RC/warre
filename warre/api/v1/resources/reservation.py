@@ -77,6 +77,10 @@ class ReservationList(base.Resource):
         except marshmallow.ValidationError as err:
             return {'error_message': err.messages}, 422
 
+        # Remove seconds when creating
+        reservation.end = reservation.end.replace(second=0)
+        reservation.start = reservation.start.replace(second=0)
+
         try:
             self.check_limit('hours', reservation.total_hours)
         except limit_exceptions.ProjectOverLimit as e:

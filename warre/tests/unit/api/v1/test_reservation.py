@@ -52,6 +52,16 @@ class TestReservationAPI(base.ApiTestCase):
         self.assert200(response)
         self.assertEqual(1, response.get_json().get('instance_count'))
 
+    def test_create_resevation_seconds_dropped(self):
+        data = {'flavor_id': self.flavor.id, 'start': '2020-01-01 00:00:22',
+                'end': '2020-01-01 01:00:34'}
+        response = self.client.post('/v1/reservations/', json=data)
+        self.assert200(response)
+        reservation_json = response.get_json()
+
+        self.assertEqual('2020-01-01T00:00:00', reservation_json.get('start'))
+        self.assertEqual('2020-01-01T01:00:00', reservation_json.get('end'))
+
     def test_create_resevation_multiple_instances(self):
         data = {'flavor_id': self.flavor.id, 'start': '2020-01-01 00:00',
                 'end': '2020-01-01 01:00', 'instance_count': 2}
