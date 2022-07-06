@@ -12,24 +12,20 @@
 #    under the License.
 
 from oslo_config import cfg
-from oslo_log import log as logging
 import oslo_messaging as messaging
 
 from warre.worker import api
-from warre.worker import manager as worker_manager
 
 
 CONF = cfg.CONF
-
-LOG = logging.getLogger(__name__)
 
 
 class Endpoints(object):
 
     target = messaging.Target(version=api.API_VERSION)
 
-    def __init__(self):
-        self.manager = worker_manager.Manager()
+    def __init__(self, manager):
+        self.manager = manager
 
     def create_lease(self, ctxt, reservation_id):
         self.manager.create_lease(reservation_id)

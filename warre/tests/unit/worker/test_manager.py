@@ -14,15 +14,20 @@
 import datetime
 from unittest import mock
 
+from freezegun import freeze_time
+
+from warre.common import notifications
+from warre.extensions import db
+from warre import models
 from warre.tests.unit import base
 from warre.worker import manager as worker_manager
 
 
-@mock.patch('warre.common.blazar.BlazarClient')
 @mock.patch('warre.app.create_app')
 class TestManager(base.TestCase):
 
-    def test_create_lease(self, mock_app, mock_blazar):
+    @mock.patch('warre.common.blazar.BlazarClient')
+    def test_create_lease(self, mock_blazar, mock_app):
         blazar_client = mock_blazar.return_value
         flavor = self.create_flavor()
         reservation = self.create_reservation(
@@ -45,7 +50,8 @@ class TestManager(base.TestCase):
             self.assertEqual('fake-nova-flavor', reservation.compute_flavor)
             self.assertEqual('ALLOCATED', reservation.status)
 
-    def test_create_lease_error(self, mock_app, mock_blazar):
+    @mock.patch('warre.common.blazar.BlazarClient')
+    def test_create_lease_error(self, mock_blazar, mock_app):
         blazar_client = mock_blazar.return_value
         flavor = self.create_flavor()
         reservation = self.create_reservation(
@@ -65,3 +71,77 @@ class TestManager(base.TestCase):
             self.assertIsNone(reservation.lease_id)
             self.assertEqual('ERROR', reservation.status)
             self.assertEqual('Bad ERROR', reservation.status_reason)
+
+    @freeze_time('2021-01-27')
+    def test_clean_old_reservations(self, mock_app):
+        flavor = self.create_flavor()
+        self.create_reservation(
+            flavor_id=flavor.id,
+            status='ACTIVE',
+            start=datetime.datetime(2021, 1, 10),
+            end=datetime.datetime(2021, 1, 20))
+        self.create_reservation(
+            flavor_id=flavor.id,
+            status='COMPLETE',
+            start=datetime.datetime(2021, 1, 10),
+            end=datetime.datetime(2021, 1, 20))
+        self.create_reservation(
+            flavor_id=flavor.id,
+            status='COMPLETE',
+            start=datetime.datetime(2021, 1, 3),
+            end=datetime.datetime(2021, 1, 19))
+
+        reservations = db.session.query(models.Reservation).all()
+        self.assertEqual(3, len(reservations))
+        manager = worker_manager.Manager()
+        manager.clean_old_reservations()
+        reservations = db.session.query(models.Reservation).all()
+        self.assertEqual(2, len(reservations))
+
+    @freeze_time('2021-01-27')
+    @mock.patch('warre.common.rpc.get_notifier')
+    def test_notify_exists(self, mock_get_notifier, mock_app):
+        notifier = mock_get_notifier.return_value
+
+        flavor = self.create_flavor()
+        res = self.create_reservation(
+            flavor_id=flavor.id,
+            status='ACTIVE',
+            start=datetime.datetime(2021, 1, 10),
+            end=datetime.datetime(2021, 1, 30))
+        self.create_reservation(
+            flavor_id=flavor.id,
+            status='COMPLETE',
+            start=datetime.datetime(2021, 1, 3),
+            end=datetime.datetime(2021, 2, 20))
+
+        manager = worker_manager.Manager()
+        manager.notify_exists()
+
+        notifier.info.assert_called_once_with(
+            mock.ANY, 'warre.reservation.exists',
+            notifications.format_reservation(res))
+
+    @freeze_time('2021-01-27')
+    @mock.patch('warre.common.rpc.get_notifier')
+    def test_notify_exists_bad_active(self, mock_get_notifier, mock_app):
+        notifier = mock_get_notifier.return_value
+
+        flavor = self.create_flavor()
+        res = self.create_reservation(
+            flavor_id=flavor.id,
+            status='ACTIVE',
+            start=datetime.datetime(2021, 1, 10),
+            end=datetime.datetime(2021, 1, 26))
+        self.create_reservation(
+            flavor_id=flavor.id,
+            status='COMPLETE',
+            start=datetime.datetime(2021, 1, 3),
+            end=datetime.datetime(2021, 2, 20))
+
+        manager = worker_manager.Manager()
+        manager.notify_exists()
+
+        notifier.info.assert_not_called()
+        res_new = db.session.query(models.Reservation).get(res.id)
+        self.assertEqual(models.Reservation.COMPLETE, res_new.status)

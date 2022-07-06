@@ -25,7 +25,7 @@ LOG = logging.getLogger(__name__)
 
 class ConsumerService(cotyledon.Service):
 
-    def __init__(self, worker_id, conf):
+    def __init__(self, worker_id, conf, manager):
         super(ConsumerService, self).__init__(worker_id)
         self.conf = conf
         self.topic = 'warre-worker'
@@ -33,12 +33,13 @@ class ConsumerService(cotyledon.Service):
         self.endpoints = []
         self.access_policy = dispatcher.DefaultRPCAccessPolicy
         self.message_listener = None
+        self.manager = manager
 
     def run(self):
-        LOG.info('Starting consumer...')
+        LOG.info('Starting consumer thread...')
         target = messaging.Target(topic=self.topic, server=self.server,
                                   fanout=False)
-        self.endpoints = [endpoints.Endpoints()]
+        self.endpoints = [endpoints.Endpoints(self.manager)]
         self.message_listener = rpc.get_server(
             target, self.endpoints,
             executor='threading',

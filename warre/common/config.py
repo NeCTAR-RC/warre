@@ -54,6 +54,8 @@ database_opts = [
 worker_opts = [
     cfg.IntOpt('workers',
                default=1),
+    cfg.IntOpt('periodic_task_interval',
+               default=1800),
 ]
 
 warre_opts = [

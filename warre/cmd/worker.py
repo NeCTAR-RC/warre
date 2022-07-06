@@ -20,7 +20,8 @@ from oslo_config import cfg
 
 from warre.common import service
 from warre.worker import consumer
-
+from warre.worker import manager
+from warre.worker import periodic
 
 CONF = cfg.CONF
 
@@ -29,8 +30,12 @@ def main():
     service.prepare_service(sys.argv)
 
     sm = cotyledon.ServiceManager()
+
+    m = manager.Manager()
     sm.add(consumer.ConsumerService, workers=CONF.worker.workers,
-           args=(CONF,))
+           args=(CONF, m))
+    sm.add(periodic.PeriodicTaskService, workers=CONF.worker.workers,
+           args=(CONF, m))
     oslo_config_glue.setup(sm, CONF, reload_method="mutate")
     sm.run()
 
