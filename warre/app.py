@@ -52,7 +52,9 @@ def create_app(test_config=None, conf_file=None, init_config=True):
     else:
         app.config.update(test_config)
 
-    config.setup_logging(CONF)
+    if init_config:
+        config.setup_logging(CONF)
+
     api_bp = flask.Blueprint('api', __name__, url_prefix='/')
     register_extensions(app, api_bp)
     register_resources(extensions.api)
