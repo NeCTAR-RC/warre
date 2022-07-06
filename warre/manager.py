@@ -67,7 +67,8 @@ class Manager(object):
             .filter(models.Reservation.start <= reservation.end) \
             .filter(models.Reservation.status.in_(
                 (models.Reservation.ALLOCATED,
-                 models.Reservation.ACTIVE))
+                 models.Reservation.ACTIVE,
+                 models.Reservation.PENDING_CREATE))
         )
         if reservations.count() >= flavor.slots:
             raise exceptions.InvalidReservation("No capacity")
