@@ -96,7 +96,6 @@ class Manager(object):
                                 .filter_by(status=models.Reservation.COMPLETE)\
                                 .filter(models.Reservation.end < week_ago)\
                                 .all()
-        LOG.info(reservations)
         for reservation in reservations:
             LOG.info(f"Deleting finished reservation {reservation}")
             db.session.delete(reservation)
