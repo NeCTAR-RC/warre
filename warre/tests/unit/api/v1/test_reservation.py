@@ -52,6 +52,18 @@ class TestReservationAPI(base.ApiTestCase):
         self.assert200(response)
         self.assertEqual(1, response.get_json().get('instance_count'))
 
+    # This is testing timezone vs non timezone dates
+    # Via the API dates are timezone aware which is then compared
+    # against non timezone aware via DB
+    def test_create_resevation_with_flavor_start(self):
+        flavor = self.create_flavor(start=datetime.datetime(2020, 1, 1),
+                                    end=datetime.datetime(2020, 2, 1))
+        data = {'flavor_id': flavor.id, 'start': '2020-01-02 00:00',
+                'end': '2020-01-02 01:00'}
+        response = self.client.post('/v1/reservations/', json=data)
+        self.assert200(response)
+        self.assertEqual(1, response.get_json().get('instance_count'))
+
     def test_create_resevation_seconds_dropped(self):
         data = {'flavor_id': self.flavor.id, 'start': '2020-01-01 00:00:22',
                 'end': '2020-01-01 01:00:34'}

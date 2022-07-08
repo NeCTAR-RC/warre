@@ -78,8 +78,8 @@ class ReservationList(base.Resource):
             return {'error_message': err.messages}, 422
 
         # Remove seconds when creating
-        reservation.end = reservation.end.replace(second=0)
-        reservation.start = reservation.start.replace(second=0)
+        reservation.end = reservation.end.replace(second=0, tzinfo=None)
+        reservation.start = reservation.start.replace(second=0, tzinfo=None)
 
         try:
             self.check_limit('hours', reservation.total_hours)
