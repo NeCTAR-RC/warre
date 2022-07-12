@@ -20,3 +20,5 @@ marshmallow_sqlalchemy>=0.22.3
 cotyledon
 pymysql
 python-memcached
+jinja2
+python-freshdesk

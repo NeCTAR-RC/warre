@@ -20,28 +20,48 @@ from warre.notification import endpoints
 from warre.tests.unit import base
 
 
+@mock.patch('warre.notification.endpoints.user')
 @mock.patch('warre.common.rpc.get_notifier')
 @mock.patch('warre.app.create_app')
 class TestEndpoints(base.TestCase):
 
-    def test_sample_start(self, mock_app, mock_get_notifier):
+    def test_sample_start(self, mock_app, mock_get_notifier, mock_user):
         self._test_sample('lease.event.start_lease', models.Reservation.ACTIVE)
         notifier = mock_get_notifier.return_value
         notifier.info.assert_called_once_with(
             self.context,
             'warre.reservation.start',
             mock.ANY)
+        mock_user.send_message.assert_called_once_with(mock.ANY, 'start')
 
-    def test_sample_end(self, mock_app, mock_get_notifier):
+    def test_sample_end(self, mock_app, mock_get_notifier, mock_user):
         self._test_sample('lease.event.end_lease', models.Reservation.COMPLETE)
         notifier = mock_get_notifier.return_value
         notifier.info.assert_called_once_with(
             self.context,
             'warre.reservation.end',
             mock.ANY)
+        mock_user.send_message.assert_called_once_with(mock.ANY, 'end')
 
-    def _test_sample(self, event, status):
-        lease_id = 'test-lease-id'
+    def test_sample_before_end(self, mock_app, mock_get_notifier, mock_user):
+        self._test_sample('lease.event.before_end',
+                          models.Reservation.ALLOCATED)
+
+        notifier = mock_get_notifier.return_value
+        notifier.info.assert_not_called()
+        mock_user.send_message.assert_called_once_with(mock.ANY, 'before_end')
+
+    def test_sample_unknown_lease(self, mock_app, mock_get_notifier,
+                                  mock_user):
+        self._test_sample('lease.event.end_lease',
+                          models.Reservation.ALLOCATED,
+                          lease_id=None)
+
+        notifier = mock_get_notifier.return_value
+        notifier.info.assert_not_called()
+        mock_user.send_message.assert_not_called()
+
+    def _test_sample(self, event, status, lease_id='test-lease-id'):
 
         flavor = self.create_flavor()
         reservation = self.create_reservation(
@@ -49,7 +69,7 @@ class TestEndpoints(base.TestCase):
             status=models.Reservation.ALLOCATED,
             start=datetime(2021, 2, 1),
             end=datetime(2021, 3, 1))
-        reservation.lease_id = lease_id
+        reservation.lease_id = 'test-lease-id'
         db.session.add(reservation)
         db.session.commit()
 
@@ -75,24 +95,3 @@ class TestEndpoints(base.TestCase):
         ep.sample(self.context, 'pub-id', 'event', payload, {})
         reservation = db.session.query(models.Reservation).get(reservation.id)
         self.assertEqual(status, reservation.status)
-
-    def test_update_lease_unknown(self, mock_app, mock_get_notifier):
-        lease_id = 'test-lease-id'
-
-        flavor = self.create_flavor()
-        reservation = self.create_reservation(
-            flavor_id=flavor.id,
-            status=models.Reservation.ALLOCATED,
-            start=datetime(2021, 2, 1),
-            end=datetime(2021, 3, 1))
-        reservation.lease_id = lease_id
-        db.session.add(reservation)
-        db.session.commit()
-
-        ep = endpoints.NotificationEndpoints()
-        self.assertEqual(models.Reservation.ALLOCATED, reservation.status)
-        ep._update_lease(self.context, 'bogus-id', models.Reservation.ACTIVE,
-                         'end')
-        self.assertEqual(models.Reservation.ALLOCATED, reservation.status)
-        notifier = mock_get_notifier.return_value
-        notifier.info.assert_not_called()

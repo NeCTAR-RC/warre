@@ -28,6 +28,7 @@ from warre.common import notifications
 from warre.common import rpc
 from warre.extensions import db
 from warre import models
+from warre.notification import user
 
 
 CONF = cfg.CONF
@@ -69,6 +70,8 @@ class Manager(object):
             LOG.info("Created Blazar lease with ID %s", reservation.lease_id)
         db.session.add(reservation)
         db.session.commit()
+        if reservation.status == models.Reservation.ALLOCATED:
+            user.send_message(reservation, 'create')
 
     def ensure_bot_access(self, project_id):
         k_session = keystone.KeystoneSession().get_session()

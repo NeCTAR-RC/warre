@@ -1,0 +1,21 @@
+<p>Dear {{ user.full_name }},</p>
+
+{% block intro %}{% endblock intro %}
+<p>
+  <ul>
+    <li>Flavor: {{ reservation.flavor.name }}</li>
+    <li>Start date: {{ reservation.start }}</li>
+    <li>End date: {{ reservation.end }}</li>
+  </ul>
+</p>
+
+{% block main %}{% endblock main %}
+<p>
+  For more information, please check out our <a href="https://support.ehelp.edu.au/support/solutions/articles/6000258960-nectar-gpu-large-memory-reservation-service">Support Site</a>.</br/>
+  If you have any questions, please reach out by replying to this email.
+</p>
+<p>
+  Kind Regards,
+  <br />
+  Nectar Research Cloud Team.
+</p>

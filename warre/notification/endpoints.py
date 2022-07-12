@@ -10,6 +10,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 import functools
 
 from oslo_config import cfg
@@ -22,6 +23,7 @@ from warre.common import notifications
 from warre.common import rpc
 from warre.extensions import db
 from warre import models
+from warre.notification import user
 
 
 CONF = cfg.CONF
@@ -48,35 +50,46 @@ class NotificationEndpoints(object):
             traits = {d[0]: d[2] for d in payload[0]['traits']}
             event_type = payload[0].get('event_type')
             if event_type == 'lease.event.end_lease':
-                self._lease_end(ctxt, traits['lease_id'])
+                event = 'end'
             elif event_type == 'lease.event.start_lease':
-                self._lease_start(ctxt, traits['lease_id'])
+                event = 'start'
+            elif event_type == 'lease.event.before_end':
+                event = 'before_end'
             else:
                 LOG.debug("Received unhandled event %s", event_type)
+                return
+            self._handle_event(ctxt, traits['lease_id'], event)
         except Exception:
             LOG.exception('Unable to handle notification: %s', payload)
 
         return messaging.NotificationResult.HANDLED
 
-    def _lease_end(self, ctxt, lease_id):
-        self._update_lease(ctxt, lease_id, models.Reservation.COMPLETE, 'end')
-
-    def _lease_start(self, ctxt, lease_id):
-        self._update_lease(ctxt, lease_id, models.Reservation.ACTIVE, 'start')
-
-    @app_context
-    def _update_lease(self, ctxt, lease_id, status, event):
+    def _handle_event(self, ctxt, lease_id, event):
         try:
             reservation = db.session.query(models.Reservation) \
                 .filter_by(lease_id=lease_id).one()
-        except s_exc.InvalidRequestError:
+        except s_exc.InvalidRequestError as e:
             LOG.error("No reservation with lease ID %s", lease_id)
+            LOG.exception(e)
         else:
-            reservation.status = status
-            db.session.add(reservation)
-            db.session.commit()
+            status = None
+            if event == 'start':
+                status = models.Reservation.ACTIVE
+            elif event == 'end':
+                status = models.Reservation.COMPLETE
 
-            self.notifier.info(ctxt, f'warre.reservation.{event}',
-                               notifications.format_reservation(reservation))
+            if status:
+                self._update_reservation(ctxt, reservation, status, event)
 
-            LOG.info("Updated reservation %s to %s", reservation.id, status)
+            user.send_message(reservation, event)
+
+    @app_context
+    def _update_reservation(self, ctxt, reservation, status, event):
+        reservation.status = status
+        db.session.add(reservation)
+        db.session.commit()
+
+        self.notifier.info(ctxt, f'warre.reservation.{event}',
+                           notifications.format_reservation(reservation))
+
+        LOG.info("Updated reservation %s to %s", reservation.id, status)

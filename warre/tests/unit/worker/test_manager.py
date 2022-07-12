@@ -26,8 +26,9 @@ from warre.worker import manager as worker_manager
 @mock.patch('warre.app.create_app')
 class TestManager(base.TestCase):
 
+    @mock.patch('warre.worker.manager.user')
     @mock.patch('warre.common.blazar.BlazarClient')
-    def test_create_lease(self, mock_blazar, mock_app):
+    def test_create_lease(self, mock_blazar, mock_user, mock_app):
         blazar_client = mock_blazar.return_value
         flavor = self.create_flavor()
         reservation = self.create_reservation(
@@ -49,9 +50,12 @@ class TestManager(base.TestCase):
             self.assertEqual('fake-lease-id', reservation.lease_id)
             self.assertEqual('fake-nova-flavor', reservation.compute_flavor)
             self.assertEqual('ALLOCATED', reservation.status)
+            mock_user.send_message.assert_called_once_with(reservation,
+                                                           'create')
 
+    @mock.patch('warre.worker.manager.user')
     @mock.patch('warre.common.blazar.BlazarClient')
-    def test_create_lease_error(self, mock_blazar, mock_app):
+    def test_create_lease_error(self, mock_blazar, mock_user, mock_app):
         blazar_client = mock_blazar.return_value
         flavor = self.create_flavor()
         reservation = self.create_reservation(
@@ -71,6 +75,7 @@ class TestManager(base.TestCase):
             self.assertIsNone(reservation.lease_id)
             self.assertEqual('ERROR', reservation.status)
             self.assertEqual('Bad ERROR', reservation.status_reason)
+            mock_user.send_message.assert_not_called()
 
     @freeze_time('2021-01-27')
     def test_clean_old_reservations(self, mock_app):

@@ -40,6 +40,9 @@ setuptools.setup(
         'oslo.policy.enforcer': [
             'warre = warre.policy:get_enforcer',
         ],
+        'warre.user.notifier': [
+            'freshdesk = warre.notification.user:FreshDeskNotifier',
+        ],
     },
     include_package_data=True,
     setup_requires=['pbr>=3.0.0'],

@@ -23,7 +23,6 @@ from warre.extensions import db
 from warre import models
 from warre.worker import api as worker_api
 
-
 LOG = logging.getLogger(__name__)
 
 

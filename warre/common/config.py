@@ -63,11 +63,23 @@ warre_opts = [
     cfg.StrOpt('bot_user_id'),
     cfg.StrOpt('bot_role_id'),
     cfg.StrOpt('bot_password', secret=True),
+    cfg.StrOpt('user_notifier',
+               default='freshdesk',
+               choices=['freshdesk'],
+               help="User notification driver to use")
+]
+
+freshdesk_opts = [
+    cfg.StrOpt('domain'),
+    cfg.StrOpt('key', secret=True),
+    cfg.IntOpt('email_config_id'),
+    cfg.IntOpt('group_id'),
 ]
 
 cfg.CONF.register_opts(warre_opts, group='warre')
 cfg.CONF.register_opts(worker_opts, group='worker')
 cfg.CONF.register_opts(database_opts, group='database')
+cfg.CONF.register_opts(freshdesk_opts, group='freshdesk')
 cfg.CONF.register_opts(flask_opts, group='flask')
 cfg.CONF.register_opts(default_opts)
 
@@ -108,6 +120,7 @@ def list_opts():
         ('worker', worker_opts),
         ('database', database_opts),
         ('flask', flask_opts),
+        ('freshdesk', freshdesk_opts),
         add_auth_opts(),
     ]
 
