@@ -74,7 +74,7 @@ class FreshDeskNotifier(UserNotifierBase):
         template_name = f'{event}.tmpl'
         user = self.get_user(reservation)
         context = {'reservation': reservation, 'user': user}
-        subject = 'Nectar Reservation System Notifiation'
+        subject = 'Nectar Reservation System Notification'
         description = self.render_template(template_name, context)
 
         ticket = api.tickets.create_outbound_email(

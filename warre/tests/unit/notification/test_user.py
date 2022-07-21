@@ -68,7 +68,7 @@ class TestFreshDeskNotifier(TestUserNotifierBase):
             ticket_id = notifier.send_message(self.reservation, 'create')
             tickets = mock_api.return_value.tickets
             tickets.create_outbound_email.assert_called_with(
-                subject='Nectar Reservation System Notifiation',
+                subject='Nectar Reservation System Notification',
                 description=mock.ANY,
                 email=kuser.email,
                 email_config_id=CONF.freshdesk.email_config_id,
