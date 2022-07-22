@@ -11,6 +11,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import datetime
 import math
 
 from oslo_config import cfg
@@ -99,6 +100,7 @@ class Reservation(db.Model):
     COMPLETE = 'COMPLETE'
 
     id = db.Column(db.String(64), primary_key=True)
+    created_at = db.Column(db.DateTime(), nullable=False)
     user_id = db.Column(db.String(64), nullable=False)
     project_id = db.Column(db.String(64), nullable=False)
     flavor_id = db.Column(db.String(64), db.ForeignKey(Flavor.id),
@@ -115,6 +117,7 @@ class Reservation(db.Model):
     def __init__(self, flavor_id, start, end, status=PENDING_CREATE,
             instance_count=1):
         self.id = uuidutils.generate_uuid()
+        self.created_at = datetime.datetime.now()
         self.status = status
         flavor = db.session.query(Flavor).get(flavor_id)
         if not flavor:
