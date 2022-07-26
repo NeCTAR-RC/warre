@@ -33,6 +33,7 @@ class BlazarClient(object):
             'vcpus': reservation.flavor.vcpu,
             'memory_mb': reservation.flavor.memory_mb,
             'disk_gb': reservation.flavor.disk_gb,
+            'ephemeral_gb': reservation.flavor.ephemeral_gb,
             'affinity': None,
             'resource_properties': reservation.flavor.properties,
             'extra_specs': reservation.flavor.extra_specs,

@@ -33,6 +33,7 @@ class Flavor(db.Model):
     vcpu = db.Column(db.Integer, nullable=False)
     memory_mb = db.Column(db.Integer, nullable=False)
     disk_gb = db.Column(db.Integer, nullable=False)
+    ephemeral_gb = db.Column(db.Integer, nullable=False, default=0)
     active = db.Column(db.Boolean())
     properties = db.Column(db.String(255))
     max_length_hours = db.Column(db.Integer, nullable=False)
@@ -46,16 +47,18 @@ class Flavor(db.Model):
     projects = db.relationship("FlavorProject", back_populates="flavor",
                                    lazy='dynamic', cascade="all,delete")
 
-    def __init__(self, name, vcpu, memory_mb, disk_gb, description=None,
-                 active=True, properties=None, max_length_hours=504, slots=1,
-                 is_public=True, extra_specs={}, start=None, end=None,
-                 category=None, availability_zone=None):
+    def __init__(self, name, vcpu, memory_mb, disk_gb, ephemeral_gb=0,
+                 description=None, active=True, properties=None,
+                 max_length_hours=504, slots=1, is_public=True,
+                 extra_specs={}, start=None, end=None, category=None,
+                 availability_zone=None):
         self.id = uuidutils.generate_uuid()
         self.name = name
         self.description = description
         self.vcpu = vcpu
         self.memory_mb = memory_mb
         self.disk_gb = disk_gb
+        self.ephemeral_gb = ephemeral_gb
         self.active = active
         self.max_length_hours = max_length_hours
         self.slots = slots

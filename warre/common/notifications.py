@@ -32,6 +32,7 @@ def format_flavor(flavor):
         'vcpu': flavor.vcpu,
         'memory_mb': flavor.memory_mb,
         'disk_gb': flavor.disk_gb,
+        'ephemeral_gb': flavor.ephemeral_gb,
         'active': flavor.active,
         'category': flavor.category,
         'availability_zone': flavor.availability_zone,

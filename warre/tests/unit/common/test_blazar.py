@@ -23,7 +23,8 @@ class TestBlazar(base.TestCase):
 
     def test_create_lease(self):
         session = mock.Mock()
-        flavor = self.create_flavor(extra_specs={'bar': 'foo'})
+        flavor = self.create_flavor(extra_specs={'bar': 'foo'},
+                                    ephemeral_gb=50)
 
         client = blazar.BlazarClient(session)
         with mock.patch.object(client, 'client') as mock_client:
@@ -38,8 +39,8 @@ class TestBlazar(base.TestCase):
                 start='2021-01-01 00:00', end='2021-01-02 00:00',
                 reservations=[{'resource_type': 'virtual:instance',
                                'amount': 1, 'vcpus': 4, 'memory_mb': 1024,
-                               'disk_gb': 30, 'affinity': None,
-                               'resource_properties': None,
+                               'disk_gb': 30, 'ephemeral_gb': 50,
+                               'affinity': None, 'resource_properties': None,
                                'extra_specs': {'bar': 'foo'}}],
                 events=[])
 

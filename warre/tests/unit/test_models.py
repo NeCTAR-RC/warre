@@ -30,3 +30,11 @@ class TestModels(base.TestCase):
         self.assertEqual('PENDING_CREATE', reservation.status)
         self.assertEqual(1, reservation.instance_count)
         self.assertEqual(datetime(2021, 1, 27), reservation.created_at)
+
+    def test_create_flavor_defaults(self):
+        flavor = models.Flavor(name='test', vcpu=1, memory_mb=10, disk_gb=5)
+        self.assertEqual(0, flavor.ephemeral_gb)
+        self.assertEqual(1, flavor.slots)
+        self.assertEqual(504, flavor.max_length_hours)
+        self.assertTrue(flavor.active)
+        self.assertTrue(flavor.is_public)
