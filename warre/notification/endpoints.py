@@ -64,6 +64,7 @@ class NotificationEndpoints(object):
 
         return messaging.NotificationResult.HANDLED
 
+    @app_context
     def _handle_event(self, ctxt, lease_id, event):
         try:
             reservation = db.session.query(models.Reservation) \
