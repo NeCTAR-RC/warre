@@ -93,6 +93,14 @@ class TestFlavorProjectAPI(base.ApiTestCase):
         self.assertEqual('xyz', fp.project_id)
         self.assertEqual('xyz', api_fp.get('project_id'))
 
+    def test_create_flavorproject_duplicate(self):
+        data = {'flavor_id': self.flavor.id, 'project_id': 'xyz'}
+        response = self.client.post('/v1/flavorprojects/', json=data)
+        self.assert200(response)
+        data = {'flavor_id': self.flavor.id, 'project_id': 'xyz'}
+        response = self.client.post('/v1/flavorprojects/', json=data)
+        self.assertStatus(response, 409)
+
     def test_create_flavorproject_bad_flavor(self):
         data = {'flavor_id': 'bad-flavor-id', 'project_id': 'xyz'}
         response = self.client.post('/v1/flavorprojects/', json=data)

@@ -76,6 +76,13 @@ class FlavorProjectList(base.Resource):
         except marshmallow.ValidationError as err:
             return err.messages, 422
 
+        existing = db.session.query(models.FlavorProject)\
+                             .filter_by(project_id=flavorproject.project_id)\
+                             .filter_by(flavor_id=flavorproject.flavor_id)\
+                             .all()
+        if existing:
+            return {"error_message": "Already exists"}, 409
+
         db.session.add(flavorproject)
         db.session.commit()
 
