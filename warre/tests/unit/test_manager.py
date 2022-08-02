@@ -182,6 +182,15 @@ class TestFlavorFreeSlots(base.TestCase):
         self.two_slot_flavor = self.create_flavor(slots=2)
         self.mgr = manager.Manager()
 
+    def test_inactive_flavor(self):
+        flavor = self.create_flavor(active=False)
+        start = datetime(2021, 1, 1)
+        end = datetime(2022, 1, 1)
+
+        self.assertEqual(
+            [],
+            self.mgr.flavor_free_slots(self.context, flavor, start, end))
+
     def test_one_slot_two_reservations(self):
         self.create_reservation(flavor_id=self.one_slot_flavor.id,
                                 status=models.Reservation.ALLOCATED,

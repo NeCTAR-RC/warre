@@ -103,6 +103,9 @@ class Manager(object):
 
         reservation - used to exclude an existing reservation when extending
         """
+        if not flavor.active:
+            return []
+
         if flavor.start and flavor.start > start:
             start = flavor.start
 
