@@ -90,7 +90,12 @@ class ReservationList(base.Resource):
             reservation = self.manager.create_reservation(self.context,
                                                           reservation)
         except exceptions.InvalidReservation as err:
+            LOG.info("Failed to create reservation: %s", err)
             return {'error_message': str(err)}, 401
+        except Exception as err:
+            LOG.error("Failed to create reservation")
+            LOG.exception(err)
+            return {'error_message': 'Unexpected API Error.'}, 500
 
         return schemas.reservation.dump(reservation)
 
