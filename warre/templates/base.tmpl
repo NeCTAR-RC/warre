@@ -4,7 +4,7 @@
 {% block intro %}{% endblock intro %}
 <p>
   <ul>
-    <li>Flavor: {{ reservation.flavor.name }}</li>
+    <li>Flavor: reservation:{{ reservation.compute_flavor }}</li>
     <li>Start date: {{ reservation.start }} UTC</li>
     <li>End date: {{ reservation.end }} UTC</li>
   </ul>

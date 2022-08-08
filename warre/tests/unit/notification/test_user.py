@@ -35,13 +35,15 @@ class TestUserNotifierBase(base.TestCase):
             end=datetime(2021, 3, 1))
 
     def test_render_template(self):
+        self.reservation.compute_flavor = 'foo123455'
         notifier = user.UserNotifierBase()
         template = notifier.render_template(
             'create.tmpl',
             {'reservation': self.reservation, 'user': mock.Mock()})
         self.assertIn('2021-02-01 00:00:00', template)
         self.assertIn('2021-03-01 00:00:00', template)
-        self.assertIn(self.flavor.name, template)
+        self.assertIn(f'reservation:{self.reservation.compute_flavor}',
+                      template)
 
     def test_get_user(self):
         notifier = user.UserNotifierBase()
