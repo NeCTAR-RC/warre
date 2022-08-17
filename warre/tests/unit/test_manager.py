@@ -123,6 +123,24 @@ class TestManager(base.TestCase):
                                     "No capacity"):
             mgr.create_reservation(self.context, reservation2)
 
+    def test_create_reservation_no_slots_multi_instance(self):
+        flavor = self.create_flavor(slots=5)
+        reservation1 = models.Reservation(flavor_id=flavor.id,
+                                          start=datetime(2020, 1, 1),
+                                          end=datetime(2020, 1, 2),
+                                          status=models.Reservation.ALLOCATED,
+                                          instance_count=5)
+        mgr = manager.Manager()
+        mgr.create_reservation(self.context, reservation1)
+        # Create another reservation with same time slot
+        reservation2 = models.Reservation(flavor_id=flavor.id,
+                                          start=datetime(2020, 1, 1),
+                                          end=datetime(2020, 1, 2))
+
+        with self.assertRaisesRegex(exceptions.InvalidReservation,
+                                    "No capacity"):
+            mgr.create_reservation(self.context, reservation2)
+
     @mock.patch('warre.common.blazar.BlazarClient')
     def test_delete_reservation(self, mock_blazar):
         blazar_client = mock_blazar.return_value
@@ -287,7 +305,7 @@ class TestFlavorFreeSlots(base.TestCase):
         self.assertEqual(datetime(2021, 2, 9, 23, 59), slots[0]['end'])
         self.assertEqual(datetime(2021, 3, 1, 0, 1), slots[1]['start'])
 
-    def test_querystring_shorter(self):
+    def test_shorter(self):
         self.create_reservation(flavor_id=self.one_slot_flavor.id,
                                 status=models.Reservation.ALLOCATED,
                                 start=datetime(2021, 2, 1),
@@ -299,7 +317,7 @@ class TestFlavorFreeSlots(base.TestCase):
                                            start, end)
         self.assertEqual(0, len(slots))
 
-    def test_querystring_overlapping(self):
+    def test_overlapping(self):
         self.create_reservation(flavor_id=self.one_slot_flavor.id,
                                 status=models.Reservation.ALLOCATED,
                                 start=datetime(2021, 2, 1),
@@ -343,3 +361,31 @@ class TestFlavorFreeSlots(base.TestCase):
 
         self.assertEqual(datetime(2021, 1, 10, 0, 0), slots[0]['start'])
         self.assertEqual(datetime(2021, 1, 20, 0, 0), slots[0]['end'])
+
+    def test_two_slots_instance_count(self):
+        flavor = self.create_flavor(slots=5)
+        self.create_reservation(flavor_id=flavor.id,
+                                status=models.Reservation.ALLOCATED,
+                                start=datetime(2021, 2, 12),
+                                end=datetime(2021, 2, 20),
+                                instance_count=3)
+        self.create_reservation(flavor_id=flavor.id,
+                                status=models.Reservation.ALLOCATED,
+                                start=datetime(2021, 2, 17),
+                                end=datetime(2021, 2, 27),
+                                instance_count=2)
+        # muddy waters more
+        self.create_reservation(flavor_id=flavor.id,
+                                status=models.Reservation.ALLOCATED,
+                                start=datetime(2021, 2, 22),
+                                end=datetime(2021, 2, 28),
+                                instance_count=1)
+
+        start = datetime(2021, 1, 1)
+        end = datetime(2022, 1, 1)
+
+        slots = self.mgr.flavor_free_slots(self.context, flavor,
+                                           start, end)
+        self.assertEqual(2, len(slots))
+        self.assertEqual(datetime(2021, 2, 16, 23, 59), slots[0]['end'])
+        self.assertEqual(datetime(2021, 2, 20, 0, 1), slots[1]['start'])

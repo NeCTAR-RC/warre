@@ -16,6 +16,7 @@ from itertools import chain
 from operator import itemgetter
 
 from oslo_log import log as logging
+from sqlalchemy.sql import functions
 
 from warre.common import blazar
 from warre.common import exceptions
@@ -60,7 +61,8 @@ class Manager(object):
                 "Reservation start time of %s after reservation end time of %s"
                 % (reservation.start, reservation.end))
 
-        reservations = db.session.query(models.Reservation) \
+        used_slots = db.session.query(
+            functions.sum(models.Reservation.instance_count)) \
             .filter_by(flavor_id=flavor.id) \
             .filter(models.Reservation.end >= reservation.start) \
             .filter(models.Reservation.start <= reservation.end) \
@@ -68,8 +70,8 @@ class Manager(object):
                 (models.Reservation.ALLOCATED,
                  models.Reservation.ACTIVE,
                  models.Reservation.PENDING_CREATE))
-        )
-        if reservations.count() >= flavor.slots:
+        ).scalar()
+        if (used_slots or 0) >= flavor.slots:
             raise exceptions.InvalidReservation("No capacity")
 
         reservation.project_id = context.project_id
@@ -125,9 +127,14 @@ class Manager(object):
 
         # the real thing begins here
         # Pass 1: segmentation and marking
-        # put every start, end date into a list
-        time_list = list(chain.from_iterable(
-            [(r.start, 'start'), (r.end, 'end')] for r in reservations))
+        # out every start, end date into a list
+        used_slots = []
+        for r in reservations:
+            # Treat multi instance as just multiple slots
+            for i in range(0, r.instance_count):
+                used_slots.append([(r.start, 'start'), (r.end, 'end')])
+
+        time_list = list(chain.from_iterable(used_slots))
         # sort on time
         time_list.sort(key=itemgetter(0))
         segments = []
