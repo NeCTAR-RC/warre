@@ -85,3 +85,15 @@ class FreshDeskNotifier(UserNotifierBase):
             group_id=CONF.freshdesk.group_id)
         LOG.info(f"Created outgoing email {ticket.id}, requester={user.email}")
         return ticket.id
+
+
+class LoggingNotifier(UserNotifierBase):
+
+    def send_message(self, reservation, event):
+        user = self.get_user(reservation)
+        context = {'reservation': reservation, 'user': user}
+        template_name = f'{event}.tmpl'
+        description = self.render_template(template_name, context)
+
+        LOG.info("Send user %s notification:", user.email)
+        LOG.info(description)

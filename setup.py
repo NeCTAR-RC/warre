@@ -42,6 +42,7 @@ setuptools.setup(
         ],
         'warre.user.notifier': [
             'freshdesk = warre.notification.user:FreshDeskNotifier',
+            'logging = warre.notification.user:LoggingNotifier',
         ],
     },
     include_package_data=True,
