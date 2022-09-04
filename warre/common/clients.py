@@ -12,7 +12,12 @@
 #    under the License.
 
 from keystoneclient.v3 import client as ks_client
+from novaclient import client as nova_client
 
 
 def get_admin_keystoneclient(sesh):
     return ks_client.Client(session=sesh)
+
+
+def get_novaclient(sesh):
+    return nova_client.Client('2.87', session=sesh)

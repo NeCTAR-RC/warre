@@ -150,3 +150,61 @@ class TestManager(base.TestCase):
         notifier.info.assert_not_called()
         res_new = db.session.query(models.Reservation).get(res.id)
         self.assertEqual(models.Reservation.COMPLETE, res_new.status)
+
+    @freeze_time('2021-01-27')
+    @mock.patch('warre.common.clients.get_novaclient')
+    @mock.patch('warre.common.rpc.get_notifier')
+    def test_notify_exists_in_use(self, mock_get_notifier, mock_nova,
+                                  mock_app):
+        notifier = mock_get_notifier.return_value
+
+        flavor = self.create_flavor()
+        res = self.create_reservation(
+            flavor_id=flavor.id,
+            status='ACTIVE',
+            start=datetime.datetime(2021, 1, 10),
+            end=datetime.datetime(2021, 1, 30))
+        res.compute_flavor = 'compute-flavor-id'
+
+        nova_client = mock_nova.return_value
+        nova_client.servers.list.return_value = [mock.Mock()]
+        manager = worker_manager.Manager()
+        manager.notify_exists()
+
+        nova_client.servers.list.assert_called_once_with(
+            search_opts={'all_tenants': True, 'tenant_id': res.project_id,
+                         'flavor': res.compute_flavor})
+        notifier.info.assert_has_calls([
+            mock.call(mock.ANY, 'warre.reservation.in_use',
+                      notifications.format_reservation(res)),
+            mock.call(mock.ANY, 'warre.reservation.exists',
+                      notifications.format_reservation(res)),
+        ])
+
+    @freeze_time('2021-01-27')
+    @mock.patch('warre.common.clients.get_novaclient')
+    @mock.patch('warre.common.rpc.get_notifier')
+    def test_notify_exists_not_in_use(self, mock_get_notifier, mock_nova,
+                                      mock_app):
+        notifier = mock_get_notifier.return_value
+
+        flavor = self.create_flavor()
+        res = self.create_reservation(
+            flavor_id=flavor.id,
+            status='ACTIVE',
+            start=datetime.datetime(2021, 1, 10),
+            end=datetime.datetime(2021, 1, 30))
+        res.compute_flavor = 'compute-flavor-id'
+
+        nova_client = mock_nova.return_value
+        nova_client.servers.list.return_value = []
+        manager = worker_manager.Manager()
+        manager.notify_exists()
+
+        nova_client.servers.list.assert_called_once_with(
+            search_opts={'all_tenants': True, 'tenant_id': res.project_id,
+                         'flavor': res.compute_flavor})
+        notifier.info.assert_has_calls([
+            mock.call(mock.ANY, 'warre.reservation.exists',
+                      notifications.format_reservation(res)),
+        ])

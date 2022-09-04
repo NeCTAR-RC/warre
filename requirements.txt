@@ -1,6 +1,7 @@
 pbr
 python-keystoneclient
 python-blazarclient
+python-novaclient
 keystoneauth1
 keystonemiddleware
 oslo.context

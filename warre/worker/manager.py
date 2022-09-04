@@ -111,6 +111,8 @@ class Manager(object):
                                 .all()
 
         ctxt = context.RequestContext()
+        k_session = keystone.KeystoneSession().get_session()
+        nova = clients.get_novaclient(k_session)
         for reservation in reservations:
             if reservation.end < datetime.datetime.now():
                 LOG.warn(f"Reservation {reservation} has ended but still "
@@ -119,6 +121,16 @@ class Manager(object):
                 db.session.add(reservation)
                 db.session.commit()
                 continue
+            if reservation.compute_flavor:
+                opts = {"all_tenants": True,
+                        'tenant_id': reservation.project_id,
+                        'flavor': reservation.compute_flavor}
+                instances = nova.servers.list(search_opts=opts)
+                if instances:
+                    LOG.debug(f"Sending in_use notification for {reservation}")
+                    self.notifier.info(ctxt, 'warre.reservation.in_use',
+                                       notifications.format_reservation(
+                                           reservation))
             LOG.debug(f"Sending exists notification for {reservation}")
             self.notifier.info(ctxt, 'warre.reservation.exists',
                                notifications.format_reservation(reservation))
