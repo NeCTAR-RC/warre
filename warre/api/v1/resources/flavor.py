@@ -77,6 +77,7 @@ class FlavorList(base.Resource):
             query = query.filter(
                 models.Flavor.availability_zone == az)
 
+        query = query.order_by(models.Flavor.name, models.Flavor.memory_mb)
         return self.paginate(query, args)
 
     def post(self, **kwargs):
