@@ -97,7 +97,8 @@ class Manager(object):
                 "Reservation must be in ACTIVE state")
 
         now = datetime.datetime.now()
-        if (new_end - reservation.end > now - reservation.start):
+        if ((new_end - now).total_seconds()
+            > (reservation.flavor.max_length_hours * 60)):
             raise exceptions.InvalidReservation(
                 "Reservation is too long, max allowed is %s hours" %
                 reservation.flavor.max_length_hours)
