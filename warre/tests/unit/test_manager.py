@@ -257,22 +257,28 @@ class TestManager(base.TestCase):
             reservation = mgr.extend_reservation(
                 self.context, reservation, new_end)
 
-    @freeze_time('2021-01-25')
-    def test_extend_reservation_too_long(self):
-        flavor = self.create_flavor(max_length_hours=48)
+    @freeze_time('2021-01-26')
+    @mock.patch('warre.common.blazar.BlazarClient')
+    def test_extend_reservation_too_long(self, mock_blazar):
+        flavor = self.create_flavor(max_length_hours=72)
         reservation = self.create_reservation(
             status=models.Reservation.ACTIVE,
             flavor_id=flavor.id,
-            start=datetime(2021, 1, 24),
-            end=datetime(2021, 1, 26))
+            start=datetime(2021, 1, 25, 0, 0),
+            end=datetime(2021, 1, 26, 23, 59))
         reservation.lease_id = 'foobar'
 
-        new_end = datetime(2021, 1, 28)
         mgr = manager.Manager()
         with self.assertRaisesRegex(exceptions.InvalidReservation,
-                "Reservation is too long, max allowed is 48 hours"):
+                "Reservation is too long, max allowed is 72 hours"):
+            new_end = datetime(2021, 1, 29, 23, 59)
             reservation = mgr.extend_reservation(
                 self.context, reservation, new_end)
+
+        # ensure its allowed when within limits
+        new_end = datetime(2021, 1, 28, 23, 59)
+        reservation = mgr.extend_reservation(
+            self.context, reservation, new_end)
 
     def test_extend_reservation_no_capacity(self):
         flavor = self.create_flavor()
