@@ -323,6 +323,7 @@ class TestManager(base.TestCase):
             mgr.delete_flavor(self.context, self.flavor)
 
 
+@freeze_time('2020-01-26')
 class TestFlavorFreeSlots(base.TestCase):
 
     def setUp(self):

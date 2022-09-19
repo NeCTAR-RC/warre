@@ -149,6 +149,10 @@ class Manager(object):
         if not flavor.active:
             return []
 
+        now = datetime.datetime.now()
+        if flavor.end and flavor.end < now:
+            return []
+
         if flavor.start and flavor.start > start:
             start = flavor.start
 
