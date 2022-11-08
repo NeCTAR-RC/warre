@@ -77,3 +77,23 @@ class TestFreshDeskNotifier(TestUserNotifierBase):
                 group_id=CONF.freshdesk.group_id)
 
             self.assertEqual(3, ticket_id)
+
+
+class TestTaynacNotifier(TestUserNotifierBase):
+
+    @mock.patch('warre.common.clients.get_taynacclient')
+    def test_send_message(self, mock_client):
+        notifier = user.TaynacNotifier()
+        taynac = mock_client.return_value
+        taynac.messages.send.return_value = mock.Mock(backend_id='23')
+
+        with mock.patch.object(notifier, 'get_user') as mock_get_user:
+            kuser = mock.Mock()
+            mock_get_user.return_value = kuser
+            ticket_id = notifier.send_message(self.reservation, 'create')
+            taynac.messages.send.assert_called_once_with(
+                subject='Nectar Reservation System Notification',
+                body=mock.ANY,
+                recipient=kuser.email)
+
+            self.assertEqual('23', ticket_id)

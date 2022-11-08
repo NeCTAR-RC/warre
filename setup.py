@@ -43,6 +43,7 @@ setuptools.setup(
         'warre.user.notifier': [
             'freshdesk = warre.notification.user:FreshDeskNotifier',
             'logging = warre.notification.user:LoggingNotifier',
+            'taynac = warre.notification.user:TaynacNotifier',
         ],
     },
     include_package_data=True,

@@ -65,7 +65,7 @@ warre_opts = [
     cfg.StrOpt('bot_password', secret=True),
     cfg.StrOpt('user_notifier',
                default='freshdesk',
-               choices=['freshdesk', 'logging'],
+               choices=['freshdesk', 'logging', 'taynac'],
                help="User notification driver to use")
 ]
 

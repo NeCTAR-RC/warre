@@ -23,3 +23,4 @@ pymysql
 python-memcached
 jinja2
 python-freshdesk
+taynacclient

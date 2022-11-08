@@ -87,6 +87,26 @@ class FreshDeskNotifier(UserNotifierBase):
         return ticket.id
 
 
+class TaynacNotifier(UserNotifierBase):
+
+    def send_message(self, reservation, event):
+        k_session = keystone.KeystoneSession().get_session()
+        taynac = clients.get_taynacclient(k_session)
+
+        template_name = f'{event}.tmpl'
+        user = self.get_user(reservation)
+        context = {'reservation': reservation, 'user': user}
+        subject = 'Nectar Reservation System Notification'
+        body = self.render_template(template_name, context)
+
+        message = taynac.messages.send(subject=subject,
+                                       body=body,
+                                       recipient=user.email)
+        LOG.info(f"Created taynac message backend_id={message.backend_id}, "
+                 f"requester={user.email}")
+        return message.backend_id
+
+
 class LoggingNotifier(UserNotifierBase):
 
     def send_message(self, reservation, event):

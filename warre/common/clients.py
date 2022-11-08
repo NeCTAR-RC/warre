@@ -13,6 +13,7 @@
 
 from keystoneclient.v3 import client as ks_client
 from novaclient import client as nova_client
+from taynacclient import client as taynac_client
 
 
 def get_admin_keystoneclient(sesh):
@@ -21,3 +22,7 @@ def get_admin_keystoneclient(sesh):
 
 def get_novaclient(sesh):
     return nova_client.Client('2.87', session=sesh)
+
+
+def get_taynacclient(sesh):
+    return taynac_client.Client('1', session=sesh)
