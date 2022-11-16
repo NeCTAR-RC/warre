@@ -80,17 +80,13 @@ class NotificationEndpoints(object):
                 status = models.Reservation.COMPLETE
 
             if status:
-                self._update_reservation(ctxt, reservation, status, event)
+                reservation.status = status
+                db.session.add(reservation)
+                db.session.commit()
+                self.notifier.info(
+                    ctxt, f'warre.reservation.{event}',
+                    notifications.format_reservation(reservation))
+                LOG.info("Updated reservation %s to %s", reservation.id,
+                         status)
 
             user.send_message(reservation, event)
-
-    @app_context
-    def _update_reservation(self, ctxt, reservation, status, event):
-        reservation.status = status
-        db.session.add(reservation)
-        db.session.commit()
-
-        self.notifier.info(ctxt, f'warre.reservation.{event}',
-                           notifications.format_reservation(reservation))
-
-        LOG.info("Updated reservation %s to %s", reservation.id, status)
