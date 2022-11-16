@@ -56,29 +56,6 @@ class TestUserNotifierBase(base.TestCase):
             self.assertEqual(kuser, output)
 
 
-class TestFreshDeskNotifier(TestUserNotifierBase):
-
-    @mock.patch('freshdesk.v2.api.API')
-    def test_send_message(self, mock_api):
-        notifier = user.FreshDeskNotifier()
-
-        mock_api.return_value.tickets.create_outbound_email.return_value = \
-            mock.Mock(id=3)
-        with mock.patch.object(notifier, 'get_user') as mock_get_user:
-            kuser = mock.Mock()
-            mock_get_user.return_value = kuser
-            ticket_id = notifier.send_message(self.reservation, 'create')
-            tickets = mock_api.return_value.tickets
-            tickets.create_outbound_email.assert_called_with(
-                subject='Nectar Reservation System Notification',
-                description=mock.ANY,
-                email=kuser.email,
-                email_config_id=CONF.freshdesk.email_config_id,
-                group_id=CONF.freshdesk.group_id)
-
-            self.assertEqual(3, ticket_id)
-
-
 class TestTaynacNotifier(TestUserNotifierBase):
 
     @mock.patch('warre.common.clients.get_taynacclient')

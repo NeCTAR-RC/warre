@@ -41,7 +41,6 @@ setuptools.setup(
             'warre = warre.policy:get_enforcer',
         ],
         'warre.user.notifier': [
-            'freshdesk = warre.notification.user:FreshDeskNotifier',
             'logging = warre.notification.user:LoggingNotifier',
             'taynac = warre.notification.user:TaynacNotifier',
         ],

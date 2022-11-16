@@ -13,7 +13,6 @@
 
 import os
 
-from freshdesk.v2 import api as fd_api
 import jinja2
 from oslo_config import cfg
 from oslo_log import log as logging
@@ -65,26 +64,6 @@ class UserNotifierBase(object):
         user = reservation.user_id
         user = self.ks_client.users.get(reservation.user_id)
         return user
-
-
-class FreshDeskNotifier(UserNotifierBase):
-
-    def send_message(self, reservation, event):
-        api = fd_api.API(CONF.freshdesk.domain, CONF.freshdesk.key)
-        template_name = f'{event}.tmpl'
-        user = self.get_user(reservation)
-        context = {'reservation': reservation, 'user': user}
-        subject = 'Nectar Reservation System Notification'
-        description = self.render_template(template_name, context)
-
-        ticket = api.tickets.create_outbound_email(
-            subject=subject,
-            description=description,
-            email=user.email,
-            email_config_id=CONF.freshdesk.email_config_id,
-            group_id=CONF.freshdesk.group_id)
-        LOG.info(f"Created outgoing email {ticket.id}, requester={user.email}")
-        return ticket.id
 
 
 class TaynacNotifier(UserNotifierBase):
