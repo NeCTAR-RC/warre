@@ -44,9 +44,9 @@ class FlavorProjectList(base.Resource):
             flask_restful.abort(403, message="Not authorised")
 
         parser = reqparse.RequestParser()
-        parser.add_argument('limit', type=int)
-        parser.add_argument('project_id')
-        parser.add_argument('flavor_id')
+        parser.add_argument('limit', type=int, location='args')
+        parser.add_argument('project_id', type=str, location='args')
+        parser.add_argument('flavor_id', type=str, location='args')
         args = parser.parse_args()
         project_id = args.get('project_id')
         flavor_id = args.get('flavor_id')

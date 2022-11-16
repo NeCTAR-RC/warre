@@ -50,9 +50,9 @@ class ReservationList(base.Resource):
             flask_restful.abort(403, message="Not authorised")
 
         parser = reqparse.RequestParser()
-        parser.add_argument('limit', type=int)
-        parser.add_argument('all_projects', type=bool)
-        parser.add_argument('project_id', type=str)
+        parser.add_argument('limit', type=int, location='args')
+        parser.add_argument('all_projects', type=bool, location='args')
+        parser.add_argument('project_id', type=str, location='args')
         args = parser.parse_args()
         query = self._get_reservations(self.context.project_id)
         if self.authorize('list:all', do_raise=False):

@@ -56,10 +56,10 @@ class FlavorList(base.Resource):
             flask_restful.abort(403, message="Not authorised")
 
         parser = reqparse.RequestParser()
-        parser.add_argument('limit', type=int)
-        parser.add_argument('all_projects', type=bool)
-        parser.add_argument('category')
-        parser.add_argument('availability_zone')
+        parser.add_argument('limit', type=int, location='args')
+        parser.add_argument('all_projects', type=bool, location='args')
+        parser.add_argument('category', type=str, location='args')
+        parser.add_argument('availability_zone', type=str, location='args')
         args = parser.parse_args()
         query = self._get_flavors()
 
@@ -165,10 +165,11 @@ class FlavorFreeSlot(Flavor):
         parser = reqparse.RequestParser()
         parser.add_argument(
             'start', type=inputs.date,
-            default=datetime.now())
+            default=datetime.now(), location='args')
         parser.add_argument(
             'end', type=inputs.date,
-            default=datetime.now() + timedelta(days=365))
+            default=datetime.now() + timedelta(days=365),
+            location='args')
         args = parser.parse_args()
 
         try:

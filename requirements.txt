@@ -10,7 +10,7 @@ oslo.limit>=1.5.0
 oslo.log
 oslo.messaging
 oslo.policy
-Jinja2<3.1.0
+Jinja2
 flask>=1.0.2
 marshmallow>=3.4.0
 flask_migrate>=2.1.1

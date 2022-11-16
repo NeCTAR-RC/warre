@@ -26,7 +26,7 @@ class Limits(base.Resource):
 
     def get(self, **kwargs):
         parser = reqparse.RequestParser()
-        parser.add_argument('project_id')
+        parser.add_argument('project_id', type=str, location='args')
         args = parser.parse_args()
 
         if args.get('project_id'):
