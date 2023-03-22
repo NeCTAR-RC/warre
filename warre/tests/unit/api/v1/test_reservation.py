@@ -35,6 +35,25 @@ class TestReservationAPI(base.ApiTestCase):
         results = response.get_json().get('results')
         self.assertEqual(1, len(results))
 
+    def test_list_reservations_flavor(self):
+        flavor_2 = self.create_flavor()
+        self.create_flavor()
+        self.create_reservation(flavor_id=self.flavor.id,
+                                start=datetime.datetime(2021, 1, 1),
+                                end=datetime.datetime(2021, 1, 2))
+        self.create_reservation(flavor_id=self.flavor.id,
+                                start=datetime.datetime(2021, 2, 1),
+                                end=datetime.datetime(2021, 2, 2))
+        self.create_reservation(flavor_id=flavor_2.id,
+                                start=datetime.datetime(2021, 1, 1),
+                                end=datetime.datetime(2021, 1, 2))
+        response = self.client.get(
+            f'/v1/reservations/?flavor_id={self.flavor.id}')
+
+        self.assert200(response)
+        results = response.get_json().get('results')
+        self.assertEqual(2, len(results))
+
     def test_list_reservations_non_project(self):
         self.create_reservation(flavor_id=self.flavor.id,
                                 start=datetime.datetime(2021, 1, 1),

@@ -53,12 +53,16 @@ class ReservationList(base.Resource):
         parser.add_argument('limit', type=int, location='args')
         parser.add_argument('all_projects', type=bool, location='args')
         parser.add_argument('project_id', type=str, location='args')
+        parser.add_argument('flavor_id', type=str, location='args')
         args = parser.parse_args()
         query = self._get_reservations(self.context.project_id)
         if self.authorize('list:all', do_raise=False):
             project_id = args.get('project_id')
             if args.get('all_projects') or project_id:
                 query = self._get_reservations(project_id)
+
+        if args.get('flavor_id'):
+            query = query.filter_by(flavor_id=args.get('flavor_id'))
 
         return self.paginate(query, args)
 
