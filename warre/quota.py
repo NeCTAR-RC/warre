@@ -17,7 +17,6 @@ from warre.extensions import db
 from warre import models
 
 
-_ENFORCER = None
 EFFECTIVE_STATES = (
     models.Reservation.ACTIVE,
     models.Reservation.ALLOCATED,
@@ -26,10 +25,7 @@ EFFECTIVE_STATES = (
 
 
 def get_enforcer():
-    global _ENFORCER
-    if not _ENFORCER:
-        _ENFORCER = limit.Enforcer(get_usage)
-    return _ENFORCER
+    return limit.Enforcer(get_usage)
 
 
 def get_usage(project_id, resource_names):
