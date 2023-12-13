@@ -66,37 +66,33 @@ class TestReservationAPI(base.ApiTestCase):
         self.assertEqual(0, len(results))
 
     def test_create_resevation(self):
-        data = {'flavor_id': self.flavor.id, 'start': '2020-01-01 00:00',
-                'end': '2020-01-01 01:00'}
+        data = {'flavor_id': self.flavor.id,
+                'start': '2020-01-01T00:00:00+00:00',
+                'end': '2020-01-01T01:00:00+00:00'}
         response = self.client.post('/v1/reservations/', json=data)
         self.assert200(response)
         self.assertEqual(1, response.get_json().get('instance_count'))
+        self.assertEqual('2020-01-01T00:00:00+00:00',
+                         response.get_json().get('start'))
+        self.assertEqual('2020-01-01T01:00:00+00:00',
+                         response.get_json().get('end'))
 
-    # This is testing timezone vs non timezone dates
-    # Via the API dates are timezone aware which is then compared
-    # against non timezone aware via DB
-    def test_create_resevation_with_flavor_start(self):
-        flavor = self.create_flavor(start=datetime.datetime(2020, 1, 1),
-                                    end=datetime.datetime(2020, 2, 1))
-        data = {'flavor_id': flavor.id, 'start': '2020-01-02 00:00',
-                'end': '2020-01-02 01:00'}
+    def test_create_resevation_different_tz(self):
+        data = {'flavor_id': self.flavor.id,
+                'start': '2020-01-01T14:00:00+10:00',
+                'end': '2020-01-01T18:00:00+10:00'}
         response = self.client.post('/v1/reservations/', json=data)
         self.assert200(response)
         self.assertEqual(1, response.get_json().get('instance_count'))
-
-    def test_create_resevation_seconds_dropped(self):
-        data = {'flavor_id': self.flavor.id, 'start': '2020-01-01 00:00:22',
-                'end': '2020-01-01 01:00:34'}
-        response = self.client.post('/v1/reservations/', json=data)
-        self.assert200(response)
-        reservation_json = response.get_json()
-
-        self.assertEqual('2020-01-01T00:00:00', reservation_json.get('start'))
-        self.assertEqual('2020-01-01T01:00:00', reservation_json.get('end'))
+        self.assertEqual('2020-01-01T04:00:00+00:00',
+                         response.get_json().get('start'))
+        self.assertEqual('2020-01-01T08:00:00+00:00',
+                         response.get_json().get('end'))
 
     def test_create_resevation_multiple_instances(self):
-        data = {'flavor_id': self.flavor.id, 'start': '2020-01-01 00:00',
-                'end': '2020-01-01 01:00', 'instance_count': 2}
+        data = {'flavor_id': self.flavor.id,
+                'start': '2020-01-01T00:00:00+00:00',
+                'end': '2020-01-01T01:00:00+00:00', 'instance_count': 2}
         response = self.client.post('/v1/reservations/', json=data)
         self.assert200(response)
         self.assertEqual(2, response.get_json().get('instance_count'))
@@ -107,13 +103,14 @@ class TestReservationAPI(base.ApiTestCase):
         self.assert400(response)
 
     def test_create_resevation_bad_flavor(self):
-        data = {'flavor_id': 'bogus', 'start': '2020-01-01 00:00',
-                'end': '2020-02-02 00:00'}
+        data = {'flavor_id': 'bogus', 'start': '2020-01-01T00:00:00+00:00',
+                'end': '2020-02-02T00:00:00+00:00'}
         response = self.client.post('/v1/reservations/', json=data)
         self.assert404(response)
 
     def test_create_resevation_missing_args(self):
-        data = {'flavor_id': self.flavor.id, 'start': '2020-01-01 00:00'}
+        data = {'flavor_id': self.flavor.id,
+                'start': '2020-01-01T00:00:00+00:00'}
         response = self.client.post('/v1/reservations/', json=data)
         self.assertStatus(response, 422)
 
@@ -136,7 +133,7 @@ class TestReservationAPI(base.ApiTestCase):
             end=datetime.datetime(2021, 1, 2, 23, 59))
         reservation.lease_id = 'foo'
 
-        data = {'end': '2021-01-01 23:59'}
+        data = {'end': '2021-01-01T23:59:00+00:00'}
         response = self.client.patch(f'/v1/reservations/{reservation.id}/',
                                      json=data)
         self.assert400(response)
@@ -150,13 +147,34 @@ class TestReservationAPI(base.ApiTestCase):
             end=datetime.datetime(2021, 1, 2, 23, 59))
         reservation.lease_id = 'foo'
 
-        data = {'end': '2021-01-03 23:59'}
+        data = {'end': '2021-01-03T23:59:00+00:00'}
         response = self.client.patch(f'/v1/reservations/{reservation.id}/',
                                      json=data)
         self.assert200(response)
         reservation_json = response.get_json()
-        self.assertEqual('2021-01-01T00:00:00', reservation_json.get('start'))
-        self.assertEqual('2021-01-03T23:59:00', reservation_json.get('end'))
+        self.assertEqual('2021-01-01T00:00:00+00:00',
+                         reservation_json.get('start'))
+        self.assertEqual('2021-01-03T23:59:00+00:00',
+                         reservation_json.get('end'))
+
+    @mock.patch('warre.common.blazar.BlazarClient')
+    def test_update_reservation_with_tz(self, mock_blazar):
+        reservation = self.create_reservation(
+            status=models.Reservation.ACTIVE,
+            flavor_id=self.flavor.id,
+            start=datetime.datetime(2021, 1, 1, 0, 0),
+            end=datetime.datetime(2021, 1, 2, 23, 59))
+        reservation.lease_id = 'foo'
+
+        data = {'end': '2021-01-03T23:59:00+05:00'}
+        response = self.client.patch(f'/v1/reservations/{reservation.id}/',
+                                     json=data)
+        self.assert200(response)
+        reservation_json = response.get_json()
+        self.assertEqual('2021-01-01T00:00:00+00:00',
+                         reservation_json.get('start'))
+        self.assertEqual('2021-01-03T18:59:00+00:00',
+                         reservation_json.get('end'))
 
     @mock.patch('warre.common.blazar.BlazarClient')
     def test_update_reservation_no_capacity(self, mock_blazar):
@@ -174,7 +192,7 @@ class TestReservationAPI(base.ApiTestCase):
             start=datetime.datetime(2021, 1, 3, 0, 0),
             end=datetime.datetime(2021, 1, 4, 23, 59))
 
-        data = {'end': '2021-01-03 23:59'}
+        data = {'end': '2021-01-03T23:59:00+00:00'}
         response = self.client.patch(f'/v1/reservations/{reservation.id}/',
                                      json=data)
         self.assert401(response)

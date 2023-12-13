@@ -23,6 +23,7 @@ class ReservationSchema(ma.SQLAlchemyAutoSchema):
         model = models.Reservation
         load_instance = True
         include_relationships = True
+        datetimeformat = '%Y-%m-%dT%H:%M:%S+00:00'
 
 
 class ReservationCreateSchema(ma.SQLAlchemyAutoSchema):
@@ -31,6 +32,7 @@ class ReservationCreateSchema(ma.SQLAlchemyAutoSchema):
         model = models.Reservation
         load_instance = True
         include_fk = True
+        datetimeformat = '%Y-%m-%dT%H:%M:%S%z'
         exclude = ('id', 'created_at', 'user_id', 'project_id',
                    'status', 'lease_id')
 
@@ -39,6 +41,7 @@ class ReservationUpdateSchema(ma.SQLAlchemyAutoSchema):
     class Meta(object):
         model = models.Reservation
         fields = ('end',)
+        datetimeformat = '%Y-%m-%dT%H:%M:%S%z'
 
 
 reservation = ReservationSchema()

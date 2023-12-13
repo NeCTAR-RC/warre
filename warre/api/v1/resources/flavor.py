@@ -26,6 +26,7 @@ from warre.api.v1.resources import base
 from warre.api.v1.schemas import flavor as schemas
 from warre.common import exceptions
 from warre.common import policies
+from warre.common import utils
 from warre.extensions import db
 from warre import models
 
@@ -95,6 +96,9 @@ class FlavorList(base.Resource):
         except marshmallow.ValidationError as err:
             return err.messages, 422
 
+        flavor.start = utils.normalise_time(flavor.start)
+        flavor.end = utils.normalise_time(flavor.end)
+
         db.session.add(flavor)
         db.session.commit()
 
@@ -139,6 +143,9 @@ class Flavor(base.Resource):
             flask_restful.abort(401, message="Not authorized to edit")
 
         flavor = schemas.flavorupdate.load(data, instance=flavor)
+        flavor.start = utils.normalise_time(flavor.start)
+        flavor.end = utils.normalise_time(flavor.end)
+
         db.session.commit()
 
         return self.schema.dump(flavor)

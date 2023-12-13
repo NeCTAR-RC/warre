@@ -20,6 +20,7 @@ class FlavorSchema(ma.SQLAlchemyAutoSchema):
     class Meta(object):
         model = models.Flavor
         load_instance = True
+        datetimeformat = '%Y-%m-%dT%H:%M:%S+00:00'
 
 
 class FlavorFreeSlotSchema(ma.Schema):
@@ -27,11 +28,29 @@ class FlavorFreeSlotSchema(ma.Schema):
     class Meta(object):
         # Fields to expose
         fields = ("start", "end")
+        datetimeformat = '%Y-%m-%dT%H:%M:%S+00:00'
+
+
+class FlavorCreateSchema(ma.SQLAlchemyAutoSchema):
+
+    class Meta(object):
+        model = models.Flavor
+        load_instance = True
+        datetimeformat = '%Y-%m-%dT%H:%M:%S%z'
+        exclude = ('id',)
+
+
+class FlavorUpdateSchema(ma.SQLAlchemyAutoSchema):
+
+    class Meta(object):
+        model = models.Flavor
+        load_instance = True
+        datetimeformat = '%Y-%m-%dT%H:%M:%S%z'
+        exclude = ('id', 'vcpu', 'memory_mb', 'disk_gb', 'properties')
 
 
 flavor = FlavorSchema()
 flavors = FlavorSchema(many=True)
-flavorcreate = FlavorSchema(exclude=('id',))
-flavorupdate = FlavorSchema(exclude=('id', 'vcpu', 'memory_mb',
-                                     'disk_gb', 'properties'), partial=True)
+flavorcreate = FlavorCreateSchema()
+flavorupdate = FlavorUpdateSchema(partial=True)
 freeslots = FlavorFreeSlotSchema(many=True)

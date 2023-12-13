@@ -25,6 +25,7 @@ from warre.api.v1.resources import base
 from warre.api.v1.schemas import reservation as schemas
 from warre.common import exceptions
 from warre.common import policies
+from warre.common import utils
 from warre.extensions import db
 from warre import models
 
@@ -84,8 +85,8 @@ class ReservationList(base.Resource):
             return {'error_message': err.messages}, 422
 
         # Remove seconds when creating
-        reservation.end = reservation.end.replace(second=0, tzinfo=None)
-        reservation.start = reservation.start.replace(second=0, tzinfo=None)
+        reservation.end = utils.normalise_time(reservation.end)
+        reservation.start = utils.normalise_time(reservation.start)
 
         try:
             self.check_limit('hours', reservation.total_hours)
@@ -156,7 +157,7 @@ class Reservation(base.Resource):
                 404, message="Reservation {} doesn't exist".format(id))
 
         new_reservation = schemas.reservationupdate.load(data)
-        new_end = new_reservation.get('end')
+        new_end = utils.normalise_time(new_reservation.get('end'))
 
         if new_end <= reservation.end:
             flask_restful.abort(

@@ -132,6 +132,25 @@ class TestAdminFlavorAPI(TestFlavorAPI):
         self.assertEqual(flavor.name, api_flavor.get('name'))
         self.assertEqual('bar', flavor.extra_specs.get('foo'))
 
+    def test_flavor_create_with_tz(self):
+        data = {'name': 'test.create',
+                'vcpu': 1,
+                'memory_mb': 10,
+                'disk_gb': 20,
+                'max_length_hours': 1,
+                'slots': 1,
+                'start': '2021-01-01T08:00:00+00:00',
+                'end': '2021-01-01T23:00:00+03:00',
+                'extra_specs': {'foo': 'bar'}}
+        response = self.client.post('/v1/flavors/', json=data)
+        self.assertStatus(response, 202)
+        flavor = db.session.query(models.Flavor).all()[0]
+        api_flavor = response.get_json()
+        self.assertEqual('2021-01-01T08:00:00+00:00', api_flavor.get('start'))
+        self.assertEqual('2021-01-01T20:00:00+00:00', api_flavor.get('end'))
+        self.assertEqual(datetime.datetime(2021, 1, 1, 8, 0), flavor.start)
+        self.assertEqual(datetime.datetime(2021, 1, 1, 20, 0), flavor.end)
+
     def test_delete_flavor(self):
         flavor = self.create_flavor()
         response = self.client.delete('/v1/flavors/%s/' % flavor.id)

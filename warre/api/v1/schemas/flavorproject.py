@@ -21,6 +21,7 @@ class FlavorProjectSchema(ma.SQLAlchemyAutoSchema):
         model = models.FlavorProject
         load_instance = True
         include_relationships = True
+        datetimeformat = '%Y-%m-%dT%H:%M:%S%z'
 
 
 class FlavorProjectCreateSchema(ma.SQLAlchemyAutoSchema):
@@ -30,6 +31,7 @@ class FlavorProjectCreateSchema(ma.SQLAlchemyAutoSchema):
         load_instance = True
         include_fk = True
         exclude = ('id',)
+        datetimeformat = '%Y-%m-%dT%H:%M:%S%z'
 
 
 flavorproject = FlavorProjectSchema()
