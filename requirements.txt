@@ -22,4 +22,4 @@ cotyledon
 pymysql
 python-memcached
 jinja2
-taynacclient>=1.1.0
+taynacclient>=1.2.0
