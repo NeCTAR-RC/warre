@@ -11,7 +11,18 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import pbr.version
 
-import setuptools
+version_info = pbr.version.VersionInfo("warre")
 
-setuptools.setup(setup_requires=["pbr>=2.0.0"], pbr=True)
+
+def vendor_string():
+    return "Nectar"
+
+
+def product_string():
+    return "Warre"
+
+
+def version_string_with_package():
+    return version_info.version_string()
