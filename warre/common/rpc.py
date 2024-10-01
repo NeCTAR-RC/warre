@@ -45,21 +45,19 @@ def get_transport_url(url_str=None):
 
 def get_client(target, version_cap=None, serializer=None,
                call_monitor_timeout=None):
-    if TRANSPORT is None:
-        init()
 
-    return messaging.RPCClient(TRANSPORT,
-                               target,
-                               version_cap=version_cap,
-                               serializer=serializer,
-                               call_monitor_timeout=call_monitor_timeout)
+    assert TRANSPORT is not None, "'TRANSPORT' must not be None"
+
+    return messaging.get_rpc_client(
+        TRANSPORT, target, version_cap=version_cap,
+        serializer=serializer,
+        call_monitor_timeout=call_monitor_timeout)
 
 
 def get_server(target, endpoints, executor='threading',
                access_policy=dispatcher.DefaultRPCAccessPolicy,
                serializer=None):
-    if TRANSPORT is None:
-        init()
+    assert TRANSPORT is not None, "'TRANSPORT' must not be None"
 
     return messaging.get_rpc_server(TRANSPORT,
                                     target,
@@ -69,10 +67,11 @@ def get_server(target, endpoints, executor='threading',
                                     access_policy=access_policy)
 
 
+def get_notifier(service=None, host=None, publisher_id=None):
+    assert NOTIFIER is not None, "'NOTIFIER' must not be None"
+
+    return NOTIFIER.prepare()
+
+
 def create_transport(url):
     return messaging.get_rpc_transport(cfg.CONF, url=url)
-
-
-def get_notifier():
-    assert NOTIFIER is not None
-    return NOTIFIER

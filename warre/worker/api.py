@@ -30,7 +30,7 @@ class WorkerAPI(object):
     def __init__(self):
         target = oslo_messaging.Target(topic='warre-worker',
                                        version=API_VERSION)
-        self._client = oslo_messaging.RPCClient(rpc.TRANSPORT, target)
+        self._client = rpc.get_client(target)
 
     def create_lease(self, ctxt, reservation_id):
         cctxt = self._client.prepare(version='1.0')
