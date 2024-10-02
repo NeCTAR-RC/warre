@@ -24,7 +24,6 @@ LOG = logging.getLogger(__name__)
 
 
 class PeriodicTaskService(cotyledon.Service):
-
     def __init__(self, worker_id, conf, manager):
         super().__init__(worker_id)
         self.conf = conf
@@ -49,7 +48,7 @@ class PeriodicTaskService(cotyledon.Service):
         self.manager.notify_exists()
 
     def run(self):
-        LOG.info('Starting peridoic task thread...')
+        LOG.info("Starting periodic task thread...")
 
         callables = [
             (self.clean_old_reservations, (), {}),

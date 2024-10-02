@@ -34,7 +34,6 @@ LOG = logging.getLogger(__name__)
 
 
 class ReservationList(base.Resource):
-
     POLICY_PREFIX = policies.RESERVATION_PREFIX
     schema = schemas.reservations
 
@@ -46,24 +45,24 @@ class ReservationList(base.Resource):
 
     def get(self, **kwargs):
         try:
-            self.authorize('list')
+            self.authorize("list")
         except policy.PolicyNotAuthorized:
             flask_restful.abort(403, message="Not authorised")
 
         parser = reqparse.RequestParser()
-        parser.add_argument('limit', type=int, location='args')
-        parser.add_argument('all_projects', type=bool, location='args')
-        parser.add_argument('project_id', type=str, location='args')
-        parser.add_argument('flavor_id', type=str, location='args')
+        parser.add_argument("limit", type=int, location="args")
+        parser.add_argument("all_projects", type=bool, location="args")
+        parser.add_argument("project_id", type=str, location="args")
+        parser.add_argument("flavor_id", type=str, location="args")
         args = parser.parse_args()
         query = self._get_reservations(self.context.project_id)
-        if self.authorize('list:all', do_raise=False):
-            project_id = args.get('project_id')
-            if args.get('all_projects') or project_id:
+        if self.authorize("list:all", do_raise=False):
+            project_id = args.get("project_id")
+            if args.get("all_projects") or project_id:
                 query = self._get_reservations(project_id)
 
-        if args.get('flavor_id'):
-            query = query.filter_by(flavor_id=args.get('flavor_id'))
+        if args.get("flavor_id"):
+            query = query.filter_by(flavor_id=args.get("flavor_id"))
 
         return self.paginate(query, args)
 
@@ -73,73 +72,74 @@ class ReservationList(base.Resource):
             return {"error_message": "No input data provided"}, 400
 
         try:
-            self.check_limit('reservation')
+            self.check_limit("reservation")
         except limit_exceptions.ProjectOverLimit as e:
-            return {'error_message': str(e)}, 413
+            return {"error_message": str(e)}, 413
 
         try:
             reservation = schemas.reservationcreate.load(data)
         except exceptions.FlavorDoesNotExist:
-            return {'error_message': "Flavor does not exist"}, 404
+            return {"error_message": "Flavor does not exist"}, 404
         except marshmallow.ValidationError as err:
-            return {'error_message': err.messages}, 422
+            return {"error_message": err.messages}, 422
 
         # Remove seconds when creating
         reservation.end = utils.normalise_time(reservation.end)
         reservation.start = utils.normalise_time(reservation.start)
 
         try:
-            self.check_limit('hours', reservation.total_hours)
+            self.check_limit("hours", reservation.total_hours)
         except limit_exceptions.ProjectOverLimit as e:
-            return {'error_message': str(e)}, 413
+            return {"error_message": str(e)}, 413
 
         try:
-            reservation = self.manager.create_reservation(self.context,
-                                                          reservation)
+            reservation = self.manager.create_reservation(
+                self.context, reservation
+            )
         except exceptions.InvalidReservation as err:
             LOG.info("Failed to create reservation: %s", err)
-            return {'error_message': str(err)}, 401
+            return {"error_message": str(err)}, 401
         except Exception as err:
             LOG.error("Failed to create reservation")
             LOG.exception(err)
-            return {'error_message': 'Unexpected API Error.'}, 500
+            return {"error_message": "Unexpected API Error."}, 500
 
         return schemas.reservation.dump(reservation)
 
 
 class Reservation(base.Resource):
-
     POLICY_PREFIX = policies.RESERVATION_PREFIX
     schema = schemas.reservation
 
     def _get_reservation(self, id):
-        return db.session.query(models.Reservation) \
-                         .filter_by(id=id).first_or_404()
+        return (
+            db.session.query(models.Reservation)
+            .filter_by(id=id)
+            .first_or_404()
+        )
 
     def get(self, id):
         reservation = self._get_reservation(id)
 
-        target = {'project_id': reservation.project_id}
+        target = {"project_id": reservation.project_id}
         try:
-            self.authorize('get', target)
+            self.authorize("get", target)
         except policy.PolicyNotAuthorized:
-            flask_restful.abort(
-                404, message="Reservation {} doesn't exist".format(id))
+            flask_restful.abort(404, message=f"Reservation {id} doesn't exist")
 
         return self.schema.dump(reservation)
 
     def delete(self, id):
         reservation = self._get_reservation(id)
 
-        target = {'project_id': reservation.project_id}
+        target = {"project_id": reservation.project_id}
         try:
-            self.authorize('delete', target)
+            self.authorize("delete", target)
         except policy.PolicyNotAuthorized:
-            flask_restful.abort(
-                404, message="Reservation {} doesn't exist".format(id))
+            flask_restful.abort(404, message=f"Reservation {id} doesn't exist")
 
         self.manager.delete_reservation(self.context, reservation)
-        return '', 204
+        return "", 204
 
     def patch(self, id):
         reservation = self._get_reservation(id)
@@ -149,39 +149,41 @@ class Reservation(base.Resource):
         if errors:
             flask_restful.abort(400, message=errors)
 
-        target = {'project_id': reservation.project_id}
+        target = {"project_id": reservation.project_id}
         try:
-            self.authorize('update', target)
+            self.authorize("update", target)
         except policy.PolicyNotAuthorized:
-            flask_restful.abort(
-                404, message="Reservation {} doesn't exist".format(id))
+            flask_restful.abort(404, message=f"Reservation {id} doesn't exist")
 
         new_reservation = schemas.reservationupdate.load(data)
-        new_end = utils.normalise_time(new_reservation.get('end'))
+        new_end = utils.normalise_time(new_reservation.get("end"))
 
         if new_end <= reservation.end:
             flask_restful.abort(
-                400,
-                message="New end date must be greater then existing")
+                400, message="New end date must be greater then existing"
+            )
 
         prolong_hours = math.ceil(
-            (new_end - reservation.end).total_seconds() / 3600)
+            (new_end - reservation.end).total_seconds() / 3600
+        )
 
         try:
-            self.check_limit('hours', prolong_hours)
+            self.check_limit("hours", prolong_hours)
         except limit_exceptions.ProjectOverLimit as e:
-            return {'error_message': str(e)}, 413
+            return {"error_message": str(e)}, 413
 
         try:
             reservation = self.manager.extend_reservation(
-                self.context, reservation, new_end)
+                self.context, reservation, new_end
+            )
         except exceptions.InvalidReservation as err:
             LOG.info("Failed to extend reservation: %s", err)
-            return {'error_message':
-                    f'Failed to extend reservation: {err}'}, 401
+            return {
+                "error_message": f"Failed to extend reservation: {err}"
+            }, 401
         except Exception as err:
             LOG.error("Failed to extend reservation")
             LOG.exception(err)
-            return {'error_message': 'Unexpected API Error.'}, 500
+            return {"error_message": "Unexpected API Error."}, 500
 
         return self.schema.dump(reservation)

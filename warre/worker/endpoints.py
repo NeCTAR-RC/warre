@@ -20,8 +20,7 @@ from warre.worker import api
 CONF = cfg.CONF
 
 
-class Endpoints(object):
-
+class Endpoints:
     target = messaging.Target(version=api.API_VERSION)
 
     def __init__(self, manager):

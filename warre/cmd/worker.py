@@ -32,10 +32,14 @@ def main():
     sm = cotyledon.ServiceManager()
 
     m = manager.Manager()
-    sm.add(consumer.ConsumerService, workers=CONF.worker.workers,
-           args=(CONF, m))
-    sm.add(periodic.PeriodicTaskService, workers=CONF.worker.workers,
-           args=(CONF, m))
+    sm.add(
+        consumer.ConsumerService, workers=CONF.worker.workers, args=(CONF, m)
+    )
+    sm.add(
+        periodic.PeriodicTaskService,
+        workers=CONF.worker.workers,
+        args=(CONF, m),
+    )
     oslo_config_glue.setup(sm, CONF, reload_method="mutate")
     sm.run()
 

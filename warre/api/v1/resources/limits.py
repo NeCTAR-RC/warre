@@ -21,35 +21,37 @@ from warre import quota
 
 
 class Limits(base.Resource):
-
-    POLICY_PREFIX = 'warre:limits:%s'
+    POLICY_PREFIX = "warre:limits:%s"
 
     def get(self, **kwargs):
         parser = reqparse.RequestParser()
-        parser.add_argument('project_id', type=str, location='args')
+        parser.add_argument("project_id", type=str, location="args")
         args = parser.parse_args()
 
-        if args.get('project_id'):
+        if args.get("project_id"):
             try:
-                self.authorize('list:all')
+                self.authorize("list:all")
             except policy.PolicyNotAuthorized:
                 flask_restful.abort(403, message="Not authorised")
-            project_id = args.get('project_id')
+            project_id = args.get("project_id")
         else:
             project_id = self.context.project_id
 
         total_reservations = quota.get_usage_by_project(
-            project_id, 'reservation')
-        total_hours = quota.get_usage_by_project(project_id, 'hours')
+            project_id, "reservation"
+        )
+        total_hours = quota.get_usage_by_project(project_id, "hours")
 
         enforcer = quota.get_enforcer()
-        limits = dict(enforcer.get_project_limits(
-            project_id, ['hours', 'reservation']))
+        limits = dict(
+            enforcer.get_project_limits(project_id, ["hours", "reservation"])
+        )
 
         absolute = {
-            'maxHours': limits.get('hours'),
-            'maxReservations': limits.get('reservation'),
-            'totalHoursUsed': total_hours,
-            'totalReservationsUsed': total_reservations}
+            "maxHours": limits.get("hours"),
+            "maxReservations": limits.get("reservation"),
+            "totalHoursUsed": total_hours,
+            "totalReservationsUsed": total_reservations,
+        }
 
-        return {'absolute': absolute}
+        return {"absolute": absolute}

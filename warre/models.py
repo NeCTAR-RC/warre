@@ -44,14 +44,32 @@ class Flavor(db.Model):
     end = db.Column(db.DateTime())
     category = db.Column(db.String(64))
     availability_zone = db.Column(db.String(64))
-    projects = db.relationship("FlavorProject", back_populates="flavor",
-                                   lazy='dynamic', cascade="all,delete")
+    projects = db.relationship(
+        "FlavorProject",
+        back_populates="flavor",
+        lazy="dynamic",
+        cascade="all,delete",
+    )
 
-    def __init__(self, name, vcpu, memory_mb, disk_gb, ephemeral_gb=0,
-                 description=None, active=True, properties=None,
-                 max_length_hours=504, slots=1, is_public=True,
-                 extra_specs={}, start=None, end=None, category=None,
-                 availability_zone=None):
+    def __init__(
+        self,
+        name,
+        vcpu,
+        memory_mb,
+        disk_gb,
+        ephemeral_gb=0,
+        description=None,
+        active=True,
+        properties=None,
+        max_length_hours=504,
+        slots=1,
+        is_public=True,
+        extra_specs={},
+        start=None,
+        end=None,
+        category=None,
+        availability_zone=None,
+    ):
         self.id = uuidutils.generate_uuid()
         self.name = name
         self.description = description
@@ -71,18 +89,16 @@ class Flavor(db.Model):
         self.availability_zone = availability_zone
 
     def __repr__(self):
-        return "<Flavor '%s', '%s')>" % (self.id, self.name)
+        return f"<Flavor '{self.id}', '{self.name}')>"
 
 
 class FlavorProject(db.Model):
-
-    __table_args__ = (
-        db.UniqueConstraint('project_id', 'flavor_id'),
-    )
+    __table_args__ = (db.UniqueConstraint("project_id", "flavor_id"),)
     id = db.Column(db.String(64), primary_key=True)
     project_id = db.Column(db.String(64), nullable=False)
-    flavor_id = db.Column(db.String(64), db.ForeignKey(Flavor.id),
-                          nullable=False)
+    flavor_id = db.Column(
+        db.String(64), db.ForeignKey(Flavor.id), nullable=False
+    )
     flavor = db.relationship("Flavor")
 
     def __init__(self, project_id, flavor_id):
@@ -95,19 +111,19 @@ class FlavorProject(db.Model):
 
 
 class Reservation(db.Model):
-
-    PENDING_CREATE = 'PENDING_CREATE'
-    ERROR = 'ERROR'
-    ALLOCATED = 'ALLOCATED'
-    ACTIVE = 'ACTIVE'
-    COMPLETE = 'COMPLETE'
+    PENDING_CREATE = "PENDING_CREATE"
+    ERROR = "ERROR"
+    ALLOCATED = "ALLOCATED"
+    ACTIVE = "ACTIVE"
+    COMPLETE = "COMPLETE"
 
     id = db.Column(db.String(64), primary_key=True)
     created_at = db.Column(db.DateTime(), nullable=False)
     user_id = db.Column(db.String(64), nullable=False)
     project_id = db.Column(db.String(64), nullable=False)
-    flavor_id = db.Column(db.String(64), db.ForeignKey(Flavor.id),
-                          nullable=False)
+    flavor_id = db.Column(
+        db.String(64), db.ForeignKey(Flavor.id), nullable=False
+    )
     flavor = db.relationship("Flavor")
     lease_id = db.Column(db.String(64))
     compute_flavor = db.Column(db.String(64))
@@ -117,8 +133,9 @@ class Reservation(db.Model):
     instance_count = db.Column(db.Integer(), nullable=False, default=1)
     status_reason = db.Column(db.String(255))
 
-    def __init__(self, flavor_id, start, end, status=PENDING_CREATE,
-            instance_count=1):
+    def __init__(
+        self, flavor_id, start, end, status=PENDING_CREATE, instance_count=1
+    ):
         self.id = uuidutils.generate_uuid()
         self.created_at = datetime.datetime.now()
         self.status = status
@@ -131,7 +148,7 @@ class Reservation(db.Model):
         self.instance_count = instance_count
 
     def __repr__(self):
-        return "<Reservation '%s')>" % self.id
+        return f"<Reservation '{self.id}')>"
 
     @property
     def total_hours(self):

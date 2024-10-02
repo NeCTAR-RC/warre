@@ -4,9 +4,9 @@ Nectar Reservation System, warre is a type of beehive.
 
 ## Overview
 
-Warre is a standalone project that suppports reservations in the Nectar Cloud.
+Warre is a standalone project that supports reservations in the Nectar Cloud.
 It uses Blazar for the actual reservations within openstack but provides some enhancements.
-Ideally these will be merged into Blazar at a later time but for speed of developement warre was born.
+Ideally these will be merged into Blazar at a later time but for speed of development warre was born.
 
 ## Warre Concepts
 
@@ -43,7 +43,7 @@ There are 2 quotas you can set on a project
 
 ### Setting up quotas
 
-Warre uses oslo-limit for quotas. 
+Warre uses oslo-limit for quotas.
 
 On new installs you need to first register the 2 limits and set defaults
 See: `openstack registered limit create`
@@ -51,7 +51,7 @@ See: `openstack registered limit create`
 To set quota for a specific project see `openstack limit create`
 
 ## Client
- 
+
 See https://github.com/NeCTAR-RC/python-warreclient
 
 ## Components

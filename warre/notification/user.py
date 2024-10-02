@@ -27,21 +27,20 @@ LOG = logging.getLogger(__name__)
 
 
 def send_message(reservation, event):
-    handled_events = ['create', 'start', 'end', 'before_end']
+    handled_events = ["create", "start", "end", "before_end"]
     if event not in handled_events:
         LOG.error(f"Event {event} not handled by user notifications")
 
     notifier = stevedore_driver.DriverManager(
-                namespace='warre.user.notifier',
-                name=CONF.warre.user_notifier,
-                invoke_on_load=True
-            ).driver
+        namespace="warre.user.notifier",
+        name=CONF.warre.user_notifier,
+        invoke_on_load=True,
+    ).driver
 
     notifier.send_message(reservation, event)
 
 
-class UserNotifierBase(object):
-
+class UserNotifierBase:
     def __init__(self):
         ks_session = keystone.KeystoneSession().get_session()
         self.ks_client = clients.get_admin_keystoneclient(ks_session)
@@ -51,9 +50,9 @@ class UserNotifierBase(object):
 
     @staticmethod
     def render_template(tmpl, context={}):
-        template_dir = os.path.realpath(os.path.join(os.path.dirname(__file__),
-                                                     '../',
-                                                     'templates'))
+        template_dir = os.path.realpath(
+            os.path.join(os.path.dirname(__file__), "../", "templates")
+        )
         LOG.debug(f"Using template_dir {template_dir}")
         env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir))
         template = env.get_template(tmpl)
@@ -67,31 +66,31 @@ class UserNotifierBase(object):
 
 
 class TaynacNotifier(UserNotifierBase):
-
     def send_message(self, reservation, event):
         k_session = keystone.KeystoneSession().get_session()
         taynac = clients.get_taynacclient(k_session)
 
-        template_name = f'{event}.tmpl'
+        template_name = f"{event}.tmpl"
         user = self.get_user(reservation)
-        context = {'reservation': reservation, 'user': user}
-        subject = 'Nectar Reservation System Notification'
+        context = {"reservation": reservation, "user": user}
+        subject = "Nectar Reservation System Notification"
         body = self.render_template(template_name, context)
 
-        message = taynac.messages.send(subject=subject,
-                                       body=body,
-                                       recipient=user.email)
-        LOG.info(f"Created taynac message backend_id={message.backend_id}, "
-                 f"requester={user.email}")
+        message = taynac.messages.send(
+            subject=subject, body=body, recipient=user.email
+        )
+        LOG.info(
+            f"Created taynac message backend_id={message.backend_id}, "
+            f"requester={user.email}"
+        )
         return message.backend_id
 
 
 class LoggingNotifier(UserNotifierBase):
-
     def send_message(self, reservation, event):
         user = self.get_user(reservation)
-        context = {'reservation': reservation, 'user': user}
-        template_name = f'{event}.tmpl'
+        context = {"reservation": reservation, "user": user}
+        template_name = f"{event}.tmpl"
         description = self.render_template(template_name, context)
 
         LOG.info("Send user %s notification:", user.email)

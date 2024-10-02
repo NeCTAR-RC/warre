@@ -14,28 +14,28 @@
 
 def format_reservation(reservation):
     return {
-        'id': reservation.id,
-        'flavor': format_flavor(reservation.flavor),
-        'user_id': reservation.user_id,
-        'project_id': reservation.project_id,
-        'lease_id': reservation.lease_id,
-        'start': reservation.start,
-        'end': reservation.end,
-        'instance_count': reservation.instance_count,
+        "id": reservation.id,
+        "flavor": format_flavor(reservation.flavor),
+        "user_id": reservation.user_id,
+        "project_id": reservation.project_id,
+        "lease_id": reservation.lease_id,
+        "start": reservation.start,
+        "end": reservation.end,
+        "instance_count": reservation.instance_count,
     }
 
 
 def format_flavor(flavor):
     return {
-        'id': flavor.id,
-        'name': flavor.name,
-        'vcpu': flavor.vcpu,
-        'memory_mb': flavor.memory_mb,
-        'disk_gb': flavor.disk_gb,
-        'ephemeral_gb': flavor.ephemeral_gb,
-        'active': flavor.active,
-        'category': flavor.category,
-        'availability_zone': flavor.availability_zone,
-        'start': flavor.start,
-        'end': flavor.end,
+        "id": flavor.id,
+        "name": flavor.name,
+        "vcpu": flavor.vcpu,
+        "memory_mb": flavor.memory_mb,
+        "disk_gb": flavor.disk_gb,
+        "ephemeral_gb": flavor.ephemeral_gb,
+        "active": flavor.active,
+        "category": flavor.category,
+        "availability_zone": flavor.availability_zone,
+        "start": flavor.start,
+        "end": flavor.end,
     }

@@ -21,8 +21,8 @@ def get_admin_keystoneclient(sesh):
 
 
 def get_novaclient(sesh):
-    return nova_client.Client('2.87', session=sesh)
+    return nova_client.Client("2.87", session=sesh)
 
 
 def get_taynacclient(sesh):
-    return taynac_client.Client('1', session=sesh)
+    return taynac_client.Client("1", session=sesh)

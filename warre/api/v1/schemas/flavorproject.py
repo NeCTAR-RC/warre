@@ -16,22 +16,20 @@ from warre import models
 
 
 class FlavorProjectSchema(ma.SQLAlchemyAutoSchema):
-
-    class Meta(object):
+    class Meta:
         model = models.FlavorProject
         load_instance = True
         include_relationships = True
-        datetimeformat = '%Y-%m-%dT%H:%M:%S%z'
+        datetimeformat = "%Y-%m-%dT%H:%M:%S%z"
 
 
 class FlavorProjectCreateSchema(ma.SQLAlchemyAutoSchema):
-
-    class Meta(object):
+    class Meta:
         model = models.FlavorProject
         load_instance = True
         include_fk = True
-        exclude = ('id',)
-        datetimeformat = '%Y-%m-%dT%H:%M:%S%z'
+        exclude = ("id",)
+        datetimeformat = "%Y-%m-%dT%H:%M:%S%z"
 
 
 flavorproject = FlavorProjectSchema()

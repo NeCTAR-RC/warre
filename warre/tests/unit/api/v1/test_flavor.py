@@ -19,147 +19,153 @@ from warre.tests.unit import base
 
 
 class TestFlavorAPI(base.ApiTestCase):
-
     def test_flavor_list(self):
         self.create_flavor()
-        response = self.client.get('/v1/flavors/')
+        response = self.client.get("/v1/flavors/")
 
         self.assert200(response)
-        results = response.get_json().get('results')
+        results = response.get_json().get("results")
         self.assertEqual(1, len(results))
 
     def test_flavor_list_private(self):
         self.create_flavor(is_public=False)
-        response = self.client.get('/v1/flavors/')
+        response = self.client.get("/v1/flavors/")
 
         self.assert200(response)
-        results = response.get_json().get('results')
+        results = response.get_json().get("results")
         self.assertEqual(0, len(results))
 
     def test_flavor_list_no_access(self):
         flavor = self.create_flavor(is_public=False)
-        self.create_flavorproject(flavor_id=flavor.id, project_id='bogus_id')
-        response = self.client.get('/v1/flavors/')
+        self.create_flavorproject(flavor_id=flavor.id, project_id="bogus_id")
+        response = self.client.get("/v1/flavors/")
 
         self.assert200(response)
-        results = response.get_json().get('results')
+        results = response.get_json().get("results")
         self.assertEqual(0, len(results))
 
     def test_flavor_list_with_access(self):
         flavor = self.create_flavor(is_public=False)
-        self.create_flavorproject(flavor_id=flavor.id,
-                                  project_id=base.PROJECT_ID)
-        response = self.client.get('/v1/flavors/')
+        self.create_flavorproject(
+            flavor_id=flavor.id, project_id=base.PROJECT_ID
+        )
+        response = self.client.get("/v1/flavors/")
 
         self.assert200(response)
-        results = response.get_json().get('results')
+        results = response.get_json().get("results")
         self.assertEqual(1, len(results))
 
     def test_flavor_list_all_projects(self):
         self.create_flavor(is_public=True)
         self.create_flavor(is_public=False)
-        response = self.client.get('/v1/flavors/?all_projects=1')
+        response = self.client.get("/v1/flavors/?all_projects=1")
 
         self.assert200(response)
-        results = response.get_json().get('results')
+        results = response.get_json().get("results")
         self.assertEqual(1, len(results))
 
     def test_flavor_list_filters(self):
-        self.create_flavor(category='foo', availability_zone='zone1')
-        self.create_flavor(category='foo', availability_zone='zone2')
-        self.create_flavor(category='bar', availability_zone='zone1')
+        self.create_flavor(category="foo", availability_zone="zone1")
+        self.create_flavor(category="foo", availability_zone="zone2")
+        self.create_flavor(category="bar", availability_zone="zone1")
 
-        response = self.client.get('/v1/flavors/?category=foo')
+        response = self.client.get("/v1/flavors/?category=foo")
         self.assert200(response)
-        results = response.get_json().get('results')
+        results = response.get_json().get("results")
         self.assertEqual(2, len(results))
 
-        response = self.client.get('/v1/flavors/?availability_zone=zone2')
+        response = self.client.get("/v1/flavors/?availability_zone=zone2")
         self.assert200(response)
-        results = response.get_json().get('results')
+        results = response.get_json().get("results")
         self.assertEqual(1, len(results))
 
         response = self.client.get(
-            '/v1/flavors/?category=foo&availability_zone=zone2')
+            "/v1/flavors/?category=foo&availability_zone=zone2"
+        )
         self.assert200(response)
-        results = response.get_json().get('results')
+        results = response.get_json().get("results")
         self.assertEqual(1, len(results))
 
 
 class TestAdminFlavorAPI(TestFlavorAPI):
-
-    ROLES = ['admin']
+    ROLES = ["admin"]
 
     def test_flavor_list_all_projects(self):
         self.create_flavor(is_public=True)
         self.create_flavor(is_public=False)
-        response = self.client.get('/v1/flavors/?all_projects=1')
+        response = self.client.get("/v1/flavors/?all_projects=1")
 
         self.assert200(response)
-        results = response.get_json().get('results')
+        results = response.get_json().get("results")
         self.assertEqual(2, len(results))
 
     def test_flavor_update(self):
         flavor = self.create_flavor(slots=20)
         self.assertEqual(20, flavor.slots)
-        data = {'slots': 50}
-        response = self.client.patch('/v1/flavors/%s/' % flavor.id, json=data)
+        data = {"slots": 50}
+        response = self.client.patch(f"/v1/flavors/{flavor.id}/", json=data)
         self.assertStatus(response, 200)
         flavor = db.session.query(models.Flavor).get(flavor.id)
         api_flavor = response.get_json()
-        self.assertEqual(50, api_flavor.get('slots'))
+        self.assertEqual(50, api_flavor.get("slots"))
         self.assertEqual(50, flavor.slots)
 
     def test_flavor_update_immutable(self):
         flavor = self.create_flavor(vcpu=4)
         self.assertEqual(4, flavor.vcpu)
-        data = {'vcpu': 8}
-        response = self.client.patch('/v1/flavors/%s/' % flavor.id, json=data)
+        data = {"vcpu": 8}
+        response = self.client.patch(f"/v1/flavors/{flavor.id}/", json=data)
         self.assertStatus(response, 400)
 
     def test_flavor_create(self):
-        data = {'name': 'test.create',
-                'vcpu': 1,
-                'memory_mb': 10,
-                'disk_gb': 20,
-                'max_length_hours': 1,
-                'slots': 1,
-                'extra_specs': {'foo': 'bar'}}
-        response = self.client.post('/v1/flavors/', json=data)
+        data = {
+            "name": "test.create",
+            "vcpu": 1,
+            "memory_mb": 10,
+            "disk_gb": 20,
+            "max_length_hours": 1,
+            "slots": 1,
+            "extra_specs": {"foo": "bar"},
+        }
+        response = self.client.post("/v1/flavors/", json=data)
         self.assertStatus(response, 202)
         flavor = db.session.query(models.Flavor).all()[0]
         api_flavor = response.get_json()
-        self.assertEqual(flavor.name, api_flavor.get('name'))
-        self.assertEqual('bar', flavor.extra_specs.get('foo'))
+        self.assertEqual(flavor.name, api_flavor.get("name"))
+        self.assertEqual("bar", flavor.extra_specs.get("foo"))
 
     def test_flavor_create_with_tz(self):
-        data = {'name': 'test.create',
-                'vcpu': 1,
-                'memory_mb': 10,
-                'disk_gb': 20,
-                'max_length_hours': 1,
-                'slots': 1,
-                'start': '2021-01-01T08:00:00+00:00',
-                'end': '2021-01-01T23:00:00+03:00',
-                'extra_specs': {'foo': 'bar'}}
-        response = self.client.post('/v1/flavors/', json=data)
+        data = {
+            "name": "test.create",
+            "vcpu": 1,
+            "memory_mb": 10,
+            "disk_gb": 20,
+            "max_length_hours": 1,
+            "slots": 1,
+            "start": "2021-01-01T08:00:00+00:00",
+            "end": "2021-01-01T23:00:00+03:00",
+            "extra_specs": {"foo": "bar"},
+        }
+        response = self.client.post("/v1/flavors/", json=data)
         self.assertStatus(response, 202)
         flavor = db.session.query(models.Flavor).all()[0]
         api_flavor = response.get_json()
-        self.assertEqual('2021-01-01T08:00:00+00:00', api_flavor.get('start'))
-        self.assertEqual('2021-01-01T20:00:00+00:00', api_flavor.get('end'))
+        self.assertEqual("2021-01-01T08:00:00+00:00", api_flavor.get("start"))
+        self.assertEqual("2021-01-01T20:00:00+00:00", api_flavor.get("end"))
         self.assertEqual(datetime.datetime(2021, 1, 1, 8, 0), flavor.start)
         self.assertEqual(datetime.datetime(2021, 1, 1, 20, 0), flavor.end)
 
     def test_delete_flavor(self):
         flavor = self.create_flavor()
-        response = self.client.delete('/v1/flavors/%s/' % flavor.id)
+        response = self.client.delete(f"/v1/flavors/{flavor.id}/")
         self.assertStatus(response, 204)
 
     def test_delete_flavor_in_use(self):
         flavor = self.create_flavor()
-        self.create_reservation(flavor_id=flavor.id,
-                                start=datetime.datetime(2021, 1, 1),
-                                end=datetime.datetime(2021, 1, 2))
-        response = self.client.delete('/v1/flavors/%s/' % flavor.id)
+        self.create_reservation(
+            flavor_id=flavor.id,
+            start=datetime.datetime(2021, 1, 1),
+            end=datetime.datetime(2021, 1, 2),
+        )
+        response = self.client.delete(f"/v1/flavors/{flavor.id}/")
         self.assertStatus(response, 409)

@@ -16,37 +16,33 @@ from warre import models
 
 
 class FlavorSchema(ma.SQLAlchemyAutoSchema):
-
-    class Meta(object):
+    class Meta:
         model = models.Flavor
         load_instance = True
-        datetimeformat = '%Y-%m-%dT%H:%M:%S+00:00'
+        datetimeformat = "%Y-%m-%dT%H:%M:%S+00:00"
 
 
 class FlavorFreeSlotSchema(ma.Schema):
-
-    class Meta(object):
+    class Meta:
         # Fields to expose
         fields = ("start", "end")
-        datetimeformat = '%Y-%m-%dT%H:%M:%S+00:00'
+        datetimeformat = "%Y-%m-%dT%H:%M:%S+00:00"
 
 
 class FlavorCreateSchema(ma.SQLAlchemyAutoSchema):
-
-    class Meta(object):
+    class Meta:
         model = models.Flavor
         load_instance = True
-        datetimeformat = '%Y-%m-%dT%H:%M:%S%z'
-        exclude = ('id',)
+        datetimeformat = "%Y-%m-%dT%H:%M:%S%z"
+        exclude = ("id",)
 
 
 class FlavorUpdateSchema(ma.SQLAlchemyAutoSchema):
-
-    class Meta(object):
+    class Meta:
         model = models.Flavor
         load_instance = True
-        datetimeformat = '%Y-%m-%dT%H:%M:%S%z'
-        exclude = ('id', 'vcpu', 'memory_mb', 'disk_gb', 'properties')
+        datetimeformat = "%Y-%m-%dT%H:%M:%S%z"
+        exclude = ("id", "vcpu", "memory_mb", "disk_gb", "properties")
 
 
 flavor = FlavorSchema()

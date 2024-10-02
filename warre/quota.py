@@ -20,7 +20,7 @@ from warre import models
 EFFECTIVE_STATES = (
     models.Reservation.ACTIVE,
     models.Reservation.ALLOCATED,
-    models.Reservation.PENDING_CREATE
+    models.Reservation.PENDING_CREATE,
 )
 
 
@@ -33,15 +33,21 @@ def get_usage(project_id, resource_names):
 
 
 def get_usage_by_project(project_id, resource):
-    if resource == 'reservation':
-        return db.session.query(models.Reservation) \
-            .filter_by(project_id=project_id) \
-            .filter(models.Reservation.status.in_(EFFECTIVE_STATES)).count()
-    if resource == 'hours':
+    if resource == "reservation":
+        return (
+            db.session.query(models.Reservation)
+            .filter_by(project_id=project_id)
+            .filter(models.Reservation.status.in_(EFFECTIVE_STATES))
+            .count()
+        )
+    if resource == "hours":
         total = 0
-        reservations = db.session.query(models.Reservation) \
-            .filter_by(project_id=project_id) \
-            .filter(models.Reservation.status.in_(EFFECTIVE_STATES)).all()
+        reservations = (
+            db.session.query(models.Reservation)
+            .filter_by(project_id=project_id)
+            .filter(models.Reservation.status.in_(EFFECTIVE_STATES))
+            .all()
+        )
         for r in reservations:
-            total += (r.instance_count * r.total_hours)
+            total += r.instance_count * r.total_hours
         return total

@@ -30,7 +30,6 @@ LOG = logging.getLogger(__name__)
 
 
 class FlavorProjectList(base.Resource):
-
     POLICY_PREFIX = policies.FLAVORPROJECT_PREFIX
     schema = schemas.flavorprojects
 
@@ -39,17 +38,17 @@ class FlavorProjectList(base.Resource):
 
     def get(self, **kwargs):
         try:
-            self.authorize('list')
+            self.authorize("list")
         except policy.PolicyNotAuthorized:
             flask_restful.abort(403, message="Not authorised")
 
         parser = reqparse.RequestParser()
-        parser.add_argument('limit', type=int, location='args')
-        parser.add_argument('project_id', type=str, location='args')
-        parser.add_argument('flavor_id', type=str, location='args')
+        parser.add_argument("limit", type=int, location="args")
+        parser.add_argument("project_id", type=str, location="args")
+        parser.add_argument("flavor_id", type=str, location="args")
         args = parser.parse_args()
-        project_id = args.get('project_id')
-        flavor_id = args.get('flavor_id')
+        project_id = args.get("project_id")
+        flavor_id = args.get("flavor_id")
 
         query = self._get_flavorprojects()
         if project_id:
@@ -61,7 +60,7 @@ class FlavorProjectList(base.Resource):
 
     def post(self, **kwargs):
         try:
-            self.authorize('create')
+            self.authorize("create")
         except policy.PolicyNotAuthorized:
             flask_restful.abort(403, message="Not authorised")
 
@@ -72,14 +71,16 @@ class FlavorProjectList(base.Resource):
         try:
             flavorproject = schemas.flavorprojectcreate.load(json_data)
         except exceptions.FlavorDoesNotExist:
-            return {'error_message': "Flavor does not exist"}, 404
+            return {"error_message": "Flavor does not exist"}, 404
         except marshmallow.ValidationError as err:
             return err.messages, 422
 
-        existing = db.session.query(models.FlavorProject)\
-                             .filter_by(project_id=flavorproject.project_id)\
-                             .filter_by(flavor_id=flavorproject.flavor_id)\
-                             .all()
+        existing = (
+            db.session.query(models.FlavorProject)
+            .filter_by(project_id=flavorproject.project_id)
+            .filter_by(flavor_id=flavorproject.flavor_id)
+            .all()
+        )
         if existing:
             return {"error_message": "Already exists"}, 409
 
@@ -90,17 +91,20 @@ class FlavorProjectList(base.Resource):
 
 
 class FlavorProject(base.Resource):
-
     POLICY_PREFIX = policies.FLAVORPROJECT_PREFIX
 
     def delete(self, id):
-        flavorproject = db.session.query(models.FlavorProject) \
-            .filter_by(id=id).first_or_404()
+        flavorproject = (
+            db.session.query(models.FlavorProject)
+            .filter_by(id=id)
+            .first_or_404()
+        )
         try:
-            self.authorize('delete')
+            self.authorize("delete")
         except policy.PolicyNotAuthorized:
             flask_restful.abort(
-                404, message="FlavorProject {} dosn't exist".format(id))
+                404, message=f"FlavorProject {id} dosn't exist"
+            )
         db.session.delete(flavorproject)
         db.session.commit()
-        return '', 204
+        return "", 204

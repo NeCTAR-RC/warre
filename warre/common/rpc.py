@@ -43,28 +43,37 @@ def get_transport_url(url_str=None):
     return messaging.TransportURL.parse(cfg.CONF, url_str)
 
 
-def get_client(target, version_cap=None, serializer=None,
-               call_monitor_timeout=None):
-
+def get_client(
+    target, version_cap=None, serializer=None, call_monitor_timeout=None
+):
     assert TRANSPORT is not None, "'TRANSPORT' must not be None"
 
     return messaging.get_rpc_client(
-        TRANSPORT, target, version_cap=version_cap,
+        TRANSPORT,
+        target,
+        version_cap=version_cap,
         serializer=serializer,
-        call_monitor_timeout=call_monitor_timeout)
+        call_monitor_timeout=call_monitor_timeout,
+    )
 
 
-def get_server(target, endpoints, executor='threading',
-               access_policy=dispatcher.DefaultRPCAccessPolicy,
-               serializer=None):
+def get_server(
+    target,
+    endpoints,
+    executor="threading",
+    access_policy=dispatcher.DefaultRPCAccessPolicy,
+    serializer=None,
+):
     assert TRANSPORT is not None, "'TRANSPORT' must not be None"
 
-    return messaging.get_rpc_server(TRANSPORT,
-                                    target,
-                                    endpoints,
-                                    executor=executor,
-                                    serializer=serializer,
-                                    access_policy=access_policy)
+    return messaging.get_rpc_server(
+        TRANSPORT,
+        target,
+        endpoints,
+        executor=executor,
+        serializer=serializer,
+        access_policy=access_policy,
+    )
 
 
 def get_notifier(service=None, host=None, publisher_id=None):

@@ -25,41 +25,40 @@ LOG = logging.getLogger(__name__)
 
 
 class ConsumerService(cotyledon.Service):
-
     def __init__(self, worker_id, conf):
-        super(ConsumerService, self).__init__(worker_id)
+        super().__init__(worker_id)
         self.conf = conf
-        self.topic = 'warre-notification'
+        self.topic = "warre-notification"
         self.server = conf.host
         self.endpoints = []
         self.access_policy = dispatcher.DefaultRPCAccessPolicy
         self.message_listener = None
 
     def run(self):
-        LOG.info('Starting consumer...')
+        LOG.info("Starting consumer...")
         transport = messaging.get_notification_transport(CONF)
-        targets = [
-            messaging.Target(exchange='ceilometer',
-                             topic='warre')
-        ]
+        targets = [messaging.Target(exchange="ceilometer", topic="warre")]
         self.endpoints = [endpoints.NotificationEndpoints()]
         self.message_listener = messaging.get_notification_listener(
-            transport, targets, self.endpoints, executor='threading')
+            transport, targets, self.endpoints, executor="threading"
+        )
         self.message_listener.start()
 
     def terminate(self):
         if self.message_listener:
-            LOG.info('Stopping consumer...')
+            LOG.info("Stopping consumer...")
             self.message_listener.stop()
 
-            LOG.info('Consumer successfully stopped.  Waiting for '
-                     'final messages to be processed...')
+            LOG.info(
+                "Consumer successfully stopped.  Waiting for "
+                "final messages to be processed..."
+            )
             self.message_listener.wait()
         if self.endpoints:
-            LOG.info('Shutting down endpoint notification executors...')
+            LOG.info("Shutting down endpoint notification executors...")
             for e in self.endpoints:
                 try:
                     e.worker.executor.shutdown()
                 except AttributeError:
                     pass
-        super(ConsumerService, self).terminate()
+        super().terminate()

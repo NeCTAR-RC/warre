@@ -35,48 +35,51 @@ def app_context(f):
     def decorated(self, *args, **kwargs):
         with self.app.app_context():
             return f(self, *args, **kwargs)
+
     return decorated
 
 
-class NotificationEndpoints(object):
-
+class NotificationEndpoints:
     def __init__(self):
         self.app = app.create_app(init_config=False)
         self.notifier = rpc.get_notifier()
 
     def sample(self, ctxt, publisher_id, event_type, payload, metadata):
         try:
-            LOG.debug('Processing notification for payload %s', payload)
-            traits = {d[0]: d[2] for d in payload[0]['traits']}
-            event_type = payload[0].get('event_type')
-            if event_type == 'lease.event.end_lease':
-                event = 'end'
-            elif event_type == 'lease.event.start_lease':
-                event = 'start'
-            elif event_type == 'lease.event.before_end':
-                event = 'before_end'
+            LOG.debug("Processing notification for payload %s", payload)
+            traits = {d[0]: d[2] for d in payload[0]["traits"]}
+            event_type = payload[0].get("event_type")
+            if event_type == "lease.event.end_lease":
+                event = "end"
+            elif event_type == "lease.event.start_lease":
+                event = "start"
+            elif event_type == "lease.event.before_end":
+                event = "before_end"
             else:
                 LOG.debug("Received unhandled event %s", event_type)
                 return
-            self._handle_event(ctxt, traits['lease_id'], event)
+            self._handle_event(ctxt, traits["lease_id"], event)
         except Exception:
-            LOG.exception('Unable to handle notification: %s', payload)
+            LOG.exception("Unable to handle notification: %s", payload)
 
         return messaging.NotificationResult.HANDLED
 
     @app_context
     def _handle_event(self, ctxt, lease_id, event):
         try:
-            reservation = db.session.query(models.Reservation) \
-                .filter_by(lease_id=lease_id).one()
+            reservation = (
+                db.session.query(models.Reservation)
+                .filter_by(lease_id=lease_id)
+                .one()
+            )
         except s_exc.InvalidRequestError as e:
             LOG.error("No reservation with lease ID %s", lease_id)
             LOG.exception(e)
         else:
             status = None
-            if event == 'start':
+            if event == "start":
                 status = models.Reservation.ACTIVE
-            elif event == 'end':
+            elif event == "end":
                 status = models.Reservation.COMPLETE
 
             if status:
@@ -84,9 +87,12 @@ class NotificationEndpoints(object):
                 db.session.add(reservation)
                 db.session.commit()
                 self.notifier.info(
-                    ctxt, f'warre.reservation.{event}',
-                    notifications.format_reservation(reservation))
-                LOG.info("Updated reservation %s to %s", reservation.id,
-                         status)
+                    ctxt,
+                    f"warre.reservation.{event}",
+                    notifications.format_reservation(reservation),
+                )
+                LOG.info(
+                    "Updated reservation %s to %s", reservation.id, status
+                )
 
             user.send_message(reservation, event)

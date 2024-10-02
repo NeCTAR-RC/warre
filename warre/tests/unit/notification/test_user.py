@@ -24,7 +24,6 @@ CONF = cfg.CONF
 
 
 class TestUserNotifierBase(base.TestCase):
-
     def setUp(self, *args, **kwargs):
         super().setUp(*args, **kwargs)
         self.flavor = self.create_flavor()
@@ -32,45 +31,49 @@ class TestUserNotifierBase(base.TestCase):
             flavor_id=self.flavor.id,
             status=models.Reservation.ALLOCATED,
             start=datetime(2021, 2, 1),
-            end=datetime(2021, 3, 1))
+            end=datetime(2021, 3, 1),
+        )
 
     def test_render_template(self):
-        self.reservation.compute_flavor = 'foo123455'
+        self.reservation.compute_flavor = "foo123455"
         notifier = user.UserNotifierBase()
         template = notifier.render_template(
-            'create.tmpl',
-            {'reservation': self.reservation, 'user': mock.Mock()})
-        self.assertIn('2021-02-01 00:00:00', template)
-        self.assertIn('2021-03-01 00:00:00', template)
-        self.assertIn(f'reservation:{self.reservation.compute_flavor}',
-                      template)
+            "create.tmpl",
+            {"reservation": self.reservation, "user": mock.Mock()},
+        )
+        self.assertIn("2021-02-01 00:00:00", template)
+        self.assertIn("2021-03-01 00:00:00", template)
+        self.assertIn(
+            f"reservation:{self.reservation.compute_flavor}", template
+        )
 
     def test_get_user(self):
         notifier = user.UserNotifierBase()
         kuser = mock.Mock()
-        with mock.patch.object(notifier, 'ks_client') as mock_ksclient:
+        with mock.patch.object(notifier, "ks_client") as mock_ksclient:
             mock_ksclient.users.get.return_value = kuser
             output = notifier.get_user(self.reservation)
             mock_ksclient.users.get.assert_called_once_with(
-                self.reservation.user_id)
+                self.reservation.user_id
+            )
             self.assertEqual(kuser, output)
 
 
 class TestTaynacNotifier(TestUserNotifierBase):
-
-    @mock.patch('warre.common.clients.get_taynacclient')
+    @mock.patch("warre.common.clients.get_taynacclient")
     def test_send_message(self, mock_client):
         notifier = user.TaynacNotifier()
         taynac = mock_client.return_value
-        taynac.messages.send.return_value = mock.Mock(backend_id='23')
+        taynac.messages.send.return_value = mock.Mock(backend_id="23")
 
-        with mock.patch.object(notifier, 'get_user') as mock_get_user:
+        with mock.patch.object(notifier, "get_user") as mock_get_user:
             kuser = mock.Mock()
             mock_get_user.return_value = kuser
-            ticket_id = notifier.send_message(self.reservation, 'create')
+            ticket_id = notifier.send_message(self.reservation, "create")
             taynac.messages.send.assert_called_once_with(
-                subject='Nectar Reservation System Notification',
+                subject="Nectar Reservation System Notification",
                 body=mock.ANY,
-                recipient=kuser.email)
+                recipient=kuser.email,
+            )
 
-            self.assertEqual('23', ticket_id)
+            self.assertEqual("23", ticket_id)

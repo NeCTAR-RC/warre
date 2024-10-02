@@ -18,47 +18,53 @@ from warre.tests.unit import base
 
 
 class TestNotifications(base.TestCase):
-
     def test_format_reservation(self):
         flavor = self.create_flavor()
         reservation = self.create_reservation(
             flavor_id=flavor.id,
             start=datetime.datetime(2021, 1, 1),
-            end=datetime.datetime(2021, 1, 2))
+            end=datetime.datetime(2021, 1, 2),
+        )
 
         reservation_dict = notifications.format_reservation(reservation)
-        expected = {'end': datetime.datetime(2021, 1, 2, 0, 0),
-                    'flavor': {'active': True,
-                               'availability_zone': None,
-                               'category': None,
-                               'disk_gb': 30,
-                               'ephemeral_gb': 0,
-                               'end': None,
-                               'id': flavor.id,
-                               'memory_mb': 1024,
-                               'name': 'test.small',
-                               'start': None,
-                               'vcpu': 4},
-                    'id': reservation.id,
-                    'instance_count': 1,
-                    'lease_id': None,
-                    'project_id': 'ksprojectid1',
-                    'start': datetime.datetime(2021, 1, 1, 0, 0),
-                    'user_id': 'ksuserid1'}
+        expected = {
+            "end": datetime.datetime(2021, 1, 2, 0, 0),
+            "flavor": {
+                "active": True,
+                "availability_zone": None,
+                "category": None,
+                "disk_gb": 30,
+                "ephemeral_gb": 0,
+                "end": None,
+                "id": flavor.id,
+                "memory_mb": 1024,
+                "name": "test.small",
+                "start": None,
+                "vcpu": 4,
+            },
+            "id": reservation.id,
+            "instance_count": 1,
+            "lease_id": None,
+            "project_id": "ksprojectid1",
+            "start": datetime.datetime(2021, 1, 1, 0, 0),
+            "user_id": "ksuserid1",
+        }
         self.assertEqual(expected, reservation_dict)
 
     def test_format_flavor(self):
-        flavor = self.create_flavor(extra_specs={'bar': 'foo'})
+        flavor = self.create_flavor(extra_specs={"bar": "foo"})
         flavor_dict = notifications.format_flavor(flavor)
-        expected = {'id': flavor.id,
-                    'name': 'test.small',
-                    'vcpu': 4,
-                    'memory_mb': 1024,
-                    'disk_gb': 30,
-                    'ephemeral_gb': 0,
-                    'active': True,
-                    'category': None,
-                    'availability_zone': None,
-                    'start': None,
-                    'end': None}
+        expected = {
+            "id": flavor.id,
+            "name": "test.small",
+            "vcpu": 4,
+            "memory_mb": 1024,
+            "disk_gb": 30,
+            "ephemeral_gb": 0,
+            "active": True,
+            "category": None,
+            "availability_zone": None,
+            "start": None,
+            "end": None,
+        }
         self.assertEqual(expected, flavor_dict)

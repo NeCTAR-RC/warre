@@ -16,10 +16,10 @@ import oslo_messaging
 from warre.common import rpc
 
 # Current API version
-API_VERSION = '1.0'
+API_VERSION = "1.0"
 
 
-class WorkerAPI(object):
+class WorkerAPI:
     """Worker api
 
     Version history:
@@ -28,10 +28,11 @@ class WorkerAPI(object):
     """
 
     def __init__(self):
-        target = oslo_messaging.Target(topic='warre-worker',
-                                       version=API_VERSION)
+        target = oslo_messaging.Target(
+            topic="warre-worker", version=API_VERSION
+        )
         self._client = rpc.get_client(target)
 
     def create_lease(self, ctxt, reservation_id):
-        cctxt = self._client.prepare(version='1.0')
-        cctxt.cast(ctxt, 'create_lease', reservation_id=reservation_id)
+        cctxt = self._client.prepare(version="1.0")
+        cctxt.cast(ctxt, "create_lease", reservation_id=reservation_id)

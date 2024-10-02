@@ -24,26 +24,29 @@ from warre.extensions import db
 from warre import models
 
 
-PROJECT_ID = 'ksprojectid1'
-USER_ID = 'ksuserid1'
+PROJECT_ID = "ksprojectid1"
+USER_ID = "ksuserid1"
 
 
 class TestCase(flask_testing.TestCase):
-
     def create_app(self):
-        return app.create_app({
-            'SECRET_KEY': 'secret',
-            'TESTING': True,
-            'SQLALCHEMY_DATABASE_URI': "sqlite://",
-            'SQLALCHEMY_TRACK_MODIFICATIONS': False,
-        }, conf_file='warre/tests/etc/warre.conf')
+        return app.create_app(
+            {
+                "SECRET_KEY": "secret",
+                "TESTING": True,
+                "SQLALCHEMY_DATABASE_URI": "sqlite://",
+                "SQLALCHEMY_TRACK_MODIFICATIONS": False,
+            },
+            conf_file="warre/tests/etc/warre.conf",
+        )
 
     def setUp(self):
         super().setUp()
         self.addCleanup(mock.patch.stopall)
         db.create_all()
-        self.context = context.RequestContext(user_id=USER_ID,
-                                              project_id=PROJECT_ID)
+        self.context = context.RequestContext(
+            user_id=USER_ID, project_id=PROJECT_ID
+        )
 
     def tearDown(self):
         super().tearDown()
@@ -52,10 +55,23 @@ class TestCase(flask_testing.TestCase):
         cfg.CONF.reset()
         extensions.api.resources = []
 
-    def create_flavor(self, name='test.small', description='Test Flavor',
-                      vcpu=4, memory_mb=1024, disk_gb=30, **kwargs):
-        flavor = models.Flavor(name=name, description=description, vcpu=vcpu,
-                               memory_mb=memory_mb, disk_gb=disk_gb, **kwargs)
+    def create_flavor(
+        self,
+        name="test.small",
+        description="Test Flavor",
+        vcpu=4,
+        memory_mb=1024,
+        disk_gb=30,
+        **kwargs,
+    ):
+        flavor = models.Flavor(
+            name=name,
+            description=description,
+            vcpu=vcpu,
+            memory_mb=memory_mb,
+            disk_gb=disk_gb,
+            **kwargs,
+        )
         db.session.add(flavor)
         db.session.commit()
         return flavor
@@ -75,24 +91,22 @@ class TestCase(flask_testing.TestCase):
         return reservation
 
 
-class TestKeystoneWrapper(object):
-
+class TestKeystoneWrapper:
     def __init__(self, app, roles):
         self.app = app
         self.roles = roles
 
     def __call__(self, environ, start_response):
-        cntx = context.RequestContext(roles=self.roles,
-                                      project_id=PROJECT_ID,
-                                      user_id=USER_ID)
+        cntx = context.RequestContext(
+            roles=self.roles, project_id=PROJECT_ID, user_id=USER_ID
+        )
         environ[keystone.REQUEST_CONTEXT_ENV] = cntx
 
         return self.app(environ, start_response)
 
 
 class ApiTestCase(TestCase):
-
-    ROLES = ['member']
+    ROLES = ["member"]
 
     def setUp(self):
         super().setUp()

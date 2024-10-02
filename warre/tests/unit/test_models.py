@@ -20,19 +20,20 @@ from warre.tests.unit import base
 
 
 class TestModels(base.TestCase):
-
-    @freeze_time('2021-01-27')
+    @freeze_time("2021-01-27")
     def test_create_reservation_defaults(self):
         flavor = self.create_flavor()
-        reservation = models.Reservation(flavor_id=flavor.id,
-                                         start=datetime(2021, 1, 1),
-                                         end=datetime(2021, 1, 2))
-        self.assertEqual('PENDING_CREATE', reservation.status)
+        reservation = models.Reservation(
+            flavor_id=flavor.id,
+            start=datetime(2021, 1, 1),
+            end=datetime(2021, 1, 2),
+        )
+        self.assertEqual("PENDING_CREATE", reservation.status)
         self.assertEqual(1, reservation.instance_count)
         self.assertEqual(datetime(2021, 1, 27), reservation.created_at)
 
     def test_create_flavor_defaults(self):
-        flavor = models.Flavor(name='test', vcpu=1, memory_mb=10, disk_gb=5)
+        flavor = models.Flavor(name="test", vcpu=1, memory_mb=10, disk_gb=5)
         self.assertEqual(0, flavor.ephemeral_gb)
         self.assertEqual(1, flavor.slots)
         self.assertEqual(504, flavor.max_length_hours)
