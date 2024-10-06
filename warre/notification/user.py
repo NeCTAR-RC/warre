@@ -81,7 +81,7 @@ class TaynacNotifier(UserNotifierBase):
         )
         LOG.info(
             f"Created taynac message backend_id={message.backend_id}, "
-            f"requester={user.email}"
+            f"requester={user.email}, event={event}"
         )
         return message.backend_id
 

@@ -53,7 +53,7 @@ class NotificationEndpoints:
                 event = "end"
             elif event_type == "lease.event.start_lease":
                 event = "start"
-            elif event_type == "lease.event.before_end":
+            elif event_type == "lease.event.before_end_lease":
                 event = "before_end"
             else:
                 LOG.debug("Received unhandled event %s", event_type)

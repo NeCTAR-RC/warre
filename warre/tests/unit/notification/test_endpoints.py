@@ -42,7 +42,7 @@ class TestEndpoints(base.TestCase):
 
     def test_sample_before_end(self, mock_app, mock_get_notifier, mock_user):
         self._test_sample(
-            "lease.event.before_end", models.Reservation.ALLOCATED
+            "lease.event.before_end_lease", models.Reservation.ALLOCATED
         )
 
         notifier = mock_get_notifier.return_value
