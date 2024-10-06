@@ -12,7 +12,7 @@ ENV PYTHONUNBUFFERED=1
 # Install pip requirements
 COPY requirements.txt .
 
-RUN apt-get update && apt-get install -y gcc
+RUN apt update && apt install -y gcc
 
 RUN python -m pip install -c https://releases.openstack.org/constraints/upper/2024.1 -r requirements.txt
 RUN python -m pip install -c https://releases.openstack.org/constraints/upper/2024.1 gunicorn
