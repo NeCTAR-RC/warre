@@ -92,7 +92,7 @@ class TestManager(base.TestCase):
 
         with self.assertRaisesRegex(
             exceptions.InvalidReservation,
-            "Reservation end time after flavor " f"end time of {flavor.end}",
+            f"Reservation end time after flavor end time of {flavor.end}",
         ):
             mgr.create_reservation(self.context, reservation)
 
