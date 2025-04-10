@@ -171,12 +171,15 @@ class FlavorFreeSlot(Flavor):
     def get(self, id, **kwargs):
         parser = reqparse.RequestParser()
         parser.add_argument(
-            "start", type=inputs.date, default=datetime.now(), location="args"
+            "start",
+            type=inputs.date,
+            default=datetime.utcnow(),
+            location="args",
         )
         parser.add_argument(
             "end",
             type=inputs.date,
-            default=datetime.now() + timedelta(days=365),
+            default=datetime.utcnow() + timedelta(days=365),
             location="args",
         )
         args = parser.parse_args()

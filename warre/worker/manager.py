@@ -102,7 +102,7 @@ class Manager:
     @app_context
     def clean_old_reservations(self):
         LOG.info("Cleaning old reservations")
-        now = datetime.datetime.now()
+        now = datetime.datetime.utcnow()
         week_ago = now - datetime.timedelta(days=7)
         reservations = (
             db.session.query(models.Reservation)
@@ -127,7 +127,7 @@ class Manager:
         k_session = keystone.KeystoneSession().get_session()
         nova = clients.get_novaclient(k_session)
         for reservation in reservations:
-            if reservation.end < datetime.datetime.now():
+            if reservation.end < datetime.datetime.utcnow():
                 LOG.warn(
                     f"Reservation {reservation} has ended but still "
                     "active, marking as COMPLETE"

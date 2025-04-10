@@ -137,7 +137,7 @@ class Reservation(db.Model):
         self, flavor_id, start, end, status=PENDING_CREATE, instance_count=1
     ):
         self.id = uuidutils.generate_uuid()
-        self.created_at = datetime.datetime.now()
+        self.created_at = datetime.datetime.utcnow()
         self.status = status
         flavor = db.session.query(Flavor).get(flavor_id)
         if not flavor:

@@ -109,7 +109,7 @@ class Manager:
                 "Reservation must be in ACTIVE state"
             )
 
-        now = datetime.datetime.now()
+        now = datetime.datetime.utcnow()
         if (new_end - now).total_seconds() > (
             reservation.flavor.max_length_hours * 60 * 60
         ):
@@ -168,7 +168,7 @@ class Manager:
         if not flavor.active:
             return []
 
-        now = datetime.datetime.now()
+        now = datetime.datetime.utcnow()
         if flavor.end and flavor.end < now:
             return []
 
