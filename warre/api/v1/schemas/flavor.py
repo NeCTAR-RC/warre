@@ -23,9 +23,10 @@ class FlavorSchema(ma.SQLAlchemyAutoSchema):
 
 
 class FlavorFreeSlotSchema(ma.Schema):
+    start = ma.DateTime()
+    end = ma.DateTime()
+
     class Meta:
-        # Fields to expose
-        fields = ("start", "end")
         datetimeformat = "%Y-%m-%dT%H:%M:%S+00:00"
 
 
