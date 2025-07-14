@@ -14,9 +14,12 @@
 
 from blazarclient import client as blazarclient
 from blazarclient import exception as blazar_exc
+from oslo_config import cfg
+
 from warre.common import keystone
 
 
+CONF = cfg.CONF
 LEASE_DATE_FORMAT = "%Y-%m-%d %H:%M"
 
 
@@ -25,7 +28,9 @@ class BlazarClient:
         if session is None:
             session = keystone.KeystoneSession().get_session()
         self.client = blazarclient.Client(
-            session=session, service_type="reservation"
+            session=session,
+            service_type="reservation",
+            interface=CONF.blazar.interface,
         )
 
     def create_lease(self, reservation):

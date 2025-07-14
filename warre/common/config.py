@@ -52,6 +52,14 @@ worker_opts = [
     cfg.IntOpt("periodic_task_interval", default=1800),
 ]
 
+blazar_opts = [
+    cfg.StrOpt(
+        "interface",
+        default="public",
+        help="The interface to use for blazar endpoint",
+    ),
+]
+
 warre_opts = [
     cfg.StrOpt("bot_auth_url"),
     cfg.StrOpt("bot_user_id"),
@@ -66,6 +74,7 @@ warre_opts = [
 ]
 
 cfg.CONF.register_opts(warre_opts, group="warre")
+cfg.CONF.register_opts(blazar_opts, group="blazar")
 cfg.CONF.register_opts(worker_opts, group="worker")
 cfg.CONF.register_opts(database_opts, group="database")
 cfg.CONF.register_opts(flask_opts, group="flask")
@@ -102,6 +111,7 @@ def list_opts():
     return [
         ("DEFAULT", default_opts),
         ("warre", warre_opts),
+        ("blazar", blazar_opts),
         ("worker", worker_opts),
         ("database", database_opts),
         ("flask", flask_opts),
