@@ -53,6 +53,52 @@ class TestManager(base.TestCase):
             self.context, reservation.id
         )
 
+    @mock.patch("warre.worker.api.WorkerAPI")
+    def test_create_reservation_with_future_allocated_slot(self, mock_worker):
+        worker = mock_worker.return_value
+        flavor = self.create_flavor(slots=2)
+        reservation1 = models.Reservation(
+            flavor_id=flavor.id,
+            start=datetime(2020, 1, 1),
+            end=datetime(2020, 1, 2),
+            status=models.Reservation.ALLOCATED,
+        )
+        reservation2 = models.Reservation(
+            flavor_id=flavor.id,
+            start=datetime(2020, 1, 2),
+            end=datetime(2020, 1, 3),
+            status=models.Reservation.ALLOCATED,
+        )
+        mgr = manager.Manager()
+        mgr.create_reservation(self.context, reservation1)
+        mgr.create_reservation(self.context, reservation2)
+        # Create another reservation overlapping existing
+        reservation3 = models.Reservation(
+            flavor_id=flavor.id,
+            start=datetime(2020, 1, 1),
+            end=datetime(2020, 1, 3),
+        )
+        mgr.create_reservation(self.context, reservation3)
+        self.assertEqual(base.PROJECT_ID, reservation3.project_id)
+        self.assertEqual(base.USER_ID, reservation3.user_id)
+        self.assertEqual(flavor, reservation3.flavor)
+        worker.create_lease.assert_has_calls(
+            [
+                mock.call(
+                    self.context,
+                    reservation1.id,
+                ),
+                mock.call(
+                    self.context,
+                    reservation2.id,
+                ),
+                mock.call(
+                    self.context,
+                    reservation3.id,
+                ),
+            ]
+        )
+
     def test_create_reservation_flavor_not_active(self):
         flavor = self.create_flavor(active=False)
         reservation = models.Reservation(

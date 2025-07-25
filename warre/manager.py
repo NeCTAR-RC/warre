@@ -16,7 +16,6 @@ from itertools import chain
 from operator import itemgetter
 
 from oslo_log import log as logging
-from sqlalchemy.sql import functions
 
 from warre.common import blazar
 from warre.common import exceptions
@@ -67,23 +66,20 @@ class Manager:
                 f"reservation end time of {reservation.end}"
             )
 
-        used_slots = (
-            db.session.query(functions.sum(models.Reservation.instance_count))
-            .filter_by(flavor_id=flavor.id)
-            .filter(models.Reservation.end >= reservation.start)
-            .filter(models.Reservation.start <= reservation.end)
-            .filter(
-                models.Reservation.status.in_(
-                    (
-                        models.Reservation.ALLOCATED,
-                        models.Reservation.ACTIVE,
-                        models.Reservation.PENDING_CREATE,
-                    )
-                )
-            )
-            .scalar()
+        free_slots = self.flavor_free_slots(
+            context,
+            flavor,
+            reservation.start,
+            reservation.end,
+            reservation,
         )
-        if (used_slots or 0) >= flavor.slots:
+
+        if free_slots:
+            f_start = free_slots[0].get("start")
+            f_end = free_slots[0].get("end")
+            if f_start != reservation.start or f_end < reservation.end:
+                raise exceptions.InvalidReservation("No capacity")
+        else:
             raise exceptions.InvalidReservation("No capacity")
 
         reservation.project_id = context.project_id
@@ -184,7 +180,11 @@ class Manager:
             .filter(models.Reservation.start <= end)
             .filter(
                 models.Reservation.status.in_(
-                    (models.Reservation.ALLOCATED, models.Reservation.ACTIVE)
+                    (
+                        models.Reservation.ALLOCATED,
+                        models.Reservation.ACTIVE,
+                        models.Reservation.PENDING_CREATE,
+                    )
                 )
             )
             .filter_by(flavor_id=flavor.id)
