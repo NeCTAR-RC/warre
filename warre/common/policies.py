@@ -105,21 +105,6 @@ flavor_rules = [
         description="Delete flavor.",
         operations=[{"path": "/v1/flavors/{flavor_id}/", "method": "DELETE"}],
     ),
-    policy.DocumentedRuleDefault(
-        name=FLAVOR_PREFIX % "get_restricted_fields",
-        check_str=f"rule:{ADMIN_OR_READER}",
-        description="View restricted flavor fields",
-        operations=[
-            {"path": "/v1/flavors/{flavor_id}/", "method": "GET"},
-            {"path": "/v1/flavors/", "method": "GET"},
-        ],
-    ),
-    policy.DocumentedRuleDefault(
-        name=FLAVOR_PREFIX % "update_restricted_fields",
-        check_str=f"rule:{ADMIN_OR_WRITER}",
-        description="Update restricted flavor fields",
-        operations=[{"path": "/v1/flavors/{flavor_id}/", "method": "PATCH"}],
-    ),
 ]
 
 FLAVORPROJECT_PREFIX = "warre:flavorproject:%s"
