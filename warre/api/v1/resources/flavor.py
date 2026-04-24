@@ -117,7 +117,21 @@ class Flavor(base.Resource):
     schema = schemas.flavor
 
     def _get_flavor(self, id):
-        return db.session.query(models.Flavor).filter_by(id=id).first_or_404()
+        flavor = (
+            db.session.query(models.Flavor).filter_by(id=id).first_or_404()
+        )
+        if self.authorize("list:all", do_raise=False):
+            return flavor
+        if flavor.is_public:
+            return flavor
+        if (
+            flavor.projects.filter_by(
+                project_id=self.context.project_id
+            ).count()
+            > 0
+        ):
+            return flavor
+        flask_restful.abort(404)
 
     def get(self, id):
         flavor = self._get_flavor(id)

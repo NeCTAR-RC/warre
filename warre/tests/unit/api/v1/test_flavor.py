@@ -86,6 +86,29 @@ class TestFlavorAPI(base.ApiTestCase):
         results = response.get_json().get("results")
         self.assertEqual(1, len(results))
 
+    def test_flavor_get_private_no_access(self):
+        flavor = self.create_flavor(is_public=False)
+        response = self.client.get(f"/v1/flavors/{flavor.id}/")
+        self.assert404(response)
+
+    def test_flavor_get_private_with_access(self):
+        flavor = self.create_flavor(is_public=False)
+        self.create_flavorproject(
+            flavor_id=flavor.id, project_id=base.PROJECT_ID
+        )
+        response = self.client.get(f"/v1/flavors/{flavor.id}/")
+        self.assert200(response)
+
+    def test_flavor_get_public(self):
+        flavor = self.create_flavor(is_public=True)
+        response = self.client.get(f"/v1/flavors/{flavor.id}/")
+        self.assert200(response)
+
+    def test_flavor_freeslots_private_no_access(self):
+        flavor = self.create_flavor(is_public=False)
+        response = self.client.get(f"/v1/flavors/{flavor.id}/freeslots/")
+        self.assert404(response)
+
 
 class TestAdminFlavorAPI(TestFlavorAPI):
     ROLES = ["admin"]
@@ -98,6 +121,16 @@ class TestAdminFlavorAPI(TestFlavorAPI):
         self.assert200(response)
         results = response.get_json().get("results")
         self.assertEqual(2, len(results))
+
+    def test_flavor_get_private_no_access(self):
+        flavor = self.create_flavor(is_public=False)
+        response = self.client.get(f"/v1/flavors/{flavor.id}/")
+        self.assert200(response)
+
+    def test_flavor_freeslots_private_no_access(self):
+        flavor = self.create_flavor(is_public=False)
+        response = self.client.get(f"/v1/flavors/{flavor.id}/freeslots/")
+        self.assert200(response)
 
     def test_flavor_update(self):
         flavor = self.create_flavor(slots=20)
