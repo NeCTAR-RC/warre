@@ -14,6 +14,7 @@
 from warre.api.v1.resources import flavor
 from warre.api.v1.resources import flavorproject
 from warre.api.v1.resources import limits
+from warre.api.v1.resources import maintenancewindow
 from warre.api.v1.resources import reservation
 
 
@@ -24,6 +25,14 @@ def initialize_resources(api):
 
     api.add_resource(flavorproject.FlavorProjectList, "/v1/flavorprojects/")
     api.add_resource(flavorproject.FlavorProject, "/v1/flavorprojects/<id>/")
+
+    api.add_resource(
+        maintenancewindow.MaintenanceWindowList, "/v1/maintenancewindows/"
+    )
+    api.add_resource(
+        maintenancewindow.MaintenanceWindowResource,
+        "/v1/maintenancewindows/<id>/",
+    )
 
     api.add_resource(reservation.ReservationList, "/v1/reservations/")
     api.add_resource(reservation.Reservation, "/v1/reservations/<id>/")

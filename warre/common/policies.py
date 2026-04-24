@@ -144,6 +144,57 @@ flavorproject_rules = [
     ),
 ]
 
+MAINTENANCEWINDOW_PREFIX = "warre:maintenancewindow:%s"
+
+maintenancewindow_rules = [
+    policy.DocumentedRuleDefault(
+        name=MAINTENANCEWINDOW_PREFIX % "get",
+        check_str="",
+        description="Show maintenance window details.",
+        operations=[
+            {"path": "/v1/maintenancewindows/{id}/", "method": "GET"},
+            {"path": "/v1/maintenancewindows/{id}/", "method": "HEAD"},
+        ],
+    ),
+    policy.DocumentedRuleDefault(
+        name=MAINTENANCEWINDOW_PREFIX % "list",
+        check_str="",
+        description="List maintenance windows.",
+        operations=[
+            {"path": "/v1/maintenancewindows/", "method": "GET"},
+            {"path": "/v1/maintenancewindows/", "method": "HEAD"},
+        ],
+    ),
+    policy.DocumentedRuleDefault(
+        name=MAINTENANCEWINDOW_PREFIX % "create",
+        check_str=f"rule:{ADMIN_OR_WRITER}",
+        description="Create a maintenance window.",
+        operations=[{"path": "/v1/maintenancewindows/", "method": "POST"}],
+    ),
+    policy.DocumentedRuleDefault(
+        name=MAINTENANCEWINDOW_PREFIX % "update",
+        check_str=f"rule:{ADMIN_OR_WRITER}",
+        description="Update a maintenance window.",
+        operations=[
+            {
+                "path": "/v1/maintenancewindows/{id}/",
+                "method": "PATCH",
+            }
+        ],
+    ),
+    policy.DocumentedRuleDefault(
+        name=MAINTENANCEWINDOW_PREFIX % "delete",
+        check_str=f"rule:{ADMIN_OR_WRITER}",
+        description="Delete a maintenance window.",
+        operations=[
+            {
+                "path": "/v1/maintenancewindows/{id}/",
+                "method": "DELETE",
+            }
+        ],
+    ),
+]
+
 limits_rules = [
     policy.DocumentedRuleDefault(
         name="warre:limits:list:all",
@@ -201,6 +252,7 @@ reservation_rules = [
 enforcer.register_defaults(base_rules)
 enforcer.register_defaults(flavor_rules)
 enforcer.register_defaults(flavorproject_rules)
+enforcer.register_defaults(maintenancewindow_rules)
 enforcer.register_defaults(limits_rules)
 enforcer.register_defaults(reservation_rules)
 
@@ -210,6 +262,7 @@ def list_rules():
         base_rules
         + flavor_rules
         + flavorproject_rules
+        + maintenancewindow_rules
         + limits_rules
         + reservation_rules
     )

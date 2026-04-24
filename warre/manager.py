@@ -66,6 +66,22 @@ class Manager:
                 f"reservation end time of {reservation.end}"
             )
 
+        maintenance_windows = (
+            db.session.query(models.MaintenanceWindow)
+            .filter(models.MaintenanceWindow.end >= reservation.start)
+            .filter(models.MaintenanceWindow.start <= reservation.end)
+            .filter(
+                models.MaintenanceWindow.flavors.any(
+                    models.Flavor.id == flavor.id
+                )
+            )
+            .count()
+        )
+        if maintenance_windows > 0:
+            raise exceptions.InvalidReservation(
+                "Reservation conflicts with a maintenance window"
+            )
+
         free_slots = self.flavor_free_slots(
             context,
             flavor,
@@ -192,6 +208,19 @@ class Manager:
         if reservation:
             query = query.filter(models.Reservation.id != reservation.id)
         reservations = query.all()
+
+        maintenance_windows = (
+            db.session.query(models.MaintenanceWindow)
+            .filter(models.MaintenanceWindow.end >= start)
+            .filter(models.MaintenanceWindow.start <= end)
+            .filter(
+                models.MaintenanceWindow.flavors.any(
+                    models.Flavor.id == flavor.id
+                )
+            )
+            .all()
+        )
+
         # the real thing begins here
         # Pass 1: segmentation and marking
         # out every start, end date into a list
@@ -200,6 +229,13 @@ class Manager:
             # Treat multi instance as just multiple slots
             for i in range(0, r.instance_count):
                 used_slots.append([(r.start, "start"), (r.end, "end")])
+
+        # Treat each maintenance window as fully occupying all slots
+        for window in maintenance_windows:
+            for i in range(flavor.slots):
+                used_slots.append(
+                    [(window.start, "start"), (window.end, "end")]
+                )
 
         time_list = list(chain.from_iterable(used_slots))
         # sort on time

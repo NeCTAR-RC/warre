@@ -686,3 +686,210 @@ class TestFlavorFreeSlots(base.TestCase):
         self.assertEqual(1, len(slots))
         self.assertEqual(start, slots[0]["start"])
         self.assertEqual(end, slots[0]["end"])
+
+    def test_maintenance_window_blocks_all_slots(self):
+        self.create_maintenance_window(
+            start=datetime(2021, 1, 1),
+            end=datetime(2022, 1, 1),
+            flavors=[self.one_slot_flavor],
+        )
+        start = datetime(2021, 1, 1)
+        end = datetime(2022, 1, 1)
+
+        slots = self.mgr.flavor_free_slots(
+            self.context, self.one_slot_flavor, start, end
+        )
+        self.assertEqual(0, len(slots))
+
+    def test_maintenance_window_splits_free_slots(self):
+        self.create_maintenance_window(
+            start=datetime(2021, 5, 1),
+            end=datetime(2021, 6, 1),
+            flavors=[self.one_slot_flavor],
+        )
+        start = datetime(2021, 1, 1)
+        end = datetime(2022, 1, 1)
+
+        slots = self.mgr.flavor_free_slots(
+            self.context, self.one_slot_flavor, start, end
+        )
+        self.assertEqual(2, len(slots))
+        self.assertEqual(start, slots[0]["start"])
+        self.assertEqual(datetime(2021, 6, 1, 0, 1), slots[1]["start"])
+        self.assertEqual(end, slots[1]["end"])
+
+    def test_maintenance_window_different_flavor_ignored(self):
+        other_flavor = self.create_flavor()
+        self.create_maintenance_window(
+            start=datetime(2021, 1, 1),
+            end=datetime(2022, 1, 1),
+            flavors=[other_flavor],
+        )
+        start = datetime(2021, 1, 1)
+        end = datetime(2022, 1, 1)
+
+        slots = self.mgr.flavor_free_slots(
+            self.context, self.one_slot_flavor, start, end
+        )
+        self.assertEqual(1, len(slots))
+        self.assertEqual(start, slots[0]["start"])
+        self.assertEqual(end, slots[0]["end"])
+
+    def test_maintenance_window_with_existing_reservation(self):
+        self.create_reservation(
+            flavor_id=self.one_slot_flavor.id,
+            status=models.Reservation.ALLOCATED,
+            start=datetime(2021, 2, 1),
+            end=datetime(2021, 3, 1),
+        )
+        self.create_maintenance_window(
+            start=datetime(2021, 5, 1),
+            end=datetime(2021, 6, 1),
+            flavors=[self.one_slot_flavor],
+        )
+        start = datetime(2021, 1, 1)
+        end = datetime(2022, 1, 1)
+
+        slots = self.mgr.flavor_free_slots(
+            self.context, self.one_slot_flavor, start, end
+        )
+        self.assertEqual(3, len(slots))
+        self.assertEqual(start, slots[0]["start"])
+        self.assertEqual(datetime(2021, 6, 1, 0, 1), slots[2]["start"])
+        self.assertEqual(end, slots[2]["end"])
+
+    def test_maintenance_window_two_slot_flavor_blocks_all(self):
+        # Window should block both slots even when only one reservation exists
+        self.create_reservation(
+            flavor_id=self.two_slot_flavor.id,
+            status=models.Reservation.ALLOCATED,
+            start=datetime(2021, 2, 1),
+            end=datetime(2021, 3, 1),
+        )
+        self.create_maintenance_window(
+            start=datetime(2021, 2, 1),
+            end=datetime(2021, 3, 1),
+            flavors=[self.two_slot_flavor],
+        )
+        start = datetime(2021, 1, 1)
+        end = datetime(2022, 1, 1)
+
+        slots = self.mgr.flavor_free_slots(
+            self.context, self.two_slot_flavor, start, end
+        )
+        self.assertEqual(2, len(slots))
+        self.assertEqual(start, slots[0]["start"])
+        self.assertEqual(datetime(2021, 3, 1, 0, 1), slots[1]["start"])
+        self.assertEqual(end, slots[1]["end"])
+
+    def test_multiple_maintenance_windows(self):
+        self.create_maintenance_window(
+            start=datetime(2021, 2, 1),
+            end=datetime(2021, 3, 1),
+            flavors=[self.one_slot_flavor],
+        )
+        self.create_maintenance_window(
+            start=datetime(2021, 6, 1),
+            end=datetime(2021, 7, 1),
+            flavors=[self.one_slot_flavor],
+        )
+        start = datetime(2021, 1, 1)
+        end = datetime(2022, 1, 1)
+
+        slots = self.mgr.flavor_free_slots(
+            self.context, self.one_slot_flavor, start, end
+        )
+        self.assertEqual(3, len(slots))
+        self.assertEqual(start, slots[0]["start"])
+        self.assertEqual(datetime(2021, 3, 1, 0, 1), slots[1]["start"])
+        self.assertEqual(datetime(2021, 5, 31, 23, 59), slots[1]["end"])
+        self.assertEqual(datetime(2021, 7, 1, 0, 1), slots[2]["start"])
+        self.assertEqual(end, slots[2]["end"])
+
+    def test_maintenance_window_no_flavors_ignored(self):
+        self.create_maintenance_window(
+            start=datetime(2021, 1, 1),
+            end=datetime(2022, 1, 1),
+        )
+        start = datetime(2021, 1, 1)
+        end = datetime(2022, 1, 1)
+
+        slots = self.mgr.flavor_free_slots(
+            self.context, self.one_slot_flavor, start, end
+        )
+        self.assertEqual(1, len(slots))
+        self.assertEqual(start, slots[0]["start"])
+        self.assertEqual(end, slots[0]["end"])
+
+
+@mock.patch("warre.worker.api.WorkerAPI")
+class TestCreateReservationMaintenanceWindow(base.TestCase):
+    def setUp(self):
+        super().setUp()
+        self.flavor = self.create_flavor()
+
+    def test_create_reservation_during_maintenance_window(self, mock_worker):
+        self.create_maintenance_window(
+            start=datetime(2021, 1, 1),
+            end=datetime(2021, 1, 10),
+            flavors=[self.flavor],
+        )
+        reservation = models.Reservation(
+            flavor_id=self.flavor.id,
+            start=datetime(2021, 1, 3),
+            end=datetime(2021, 1, 5),
+        )
+        mgr = manager.Manager()
+
+        with self.assertRaisesRegex(
+            exceptions.InvalidReservation, "maintenance window"
+        ):
+            mgr.create_reservation(self.context, reservation)
+
+    def test_create_reservation_before_maintenance_window(self, mock_worker):
+        self.create_maintenance_window(
+            start=datetime(2021, 2, 1),
+            end=datetime(2021, 3, 1),
+            flavors=[self.flavor],
+        )
+        reservation = models.Reservation(
+            flavor_id=self.flavor.id,
+            start=datetime(2021, 1, 1),
+            end=datetime(2021, 1, 7),
+        )
+        mgr = manager.Manager()
+        result = mgr.create_reservation(self.context, reservation)
+        self.assertEqual(self.flavor, result.flavor)
+
+    def test_create_reservation_after_maintenance_window(self, mock_worker):
+        self.create_maintenance_window(
+            start=datetime(2021, 1, 1),
+            end=datetime(2021, 2, 1),
+            flavors=[self.flavor],
+        )
+        reservation = models.Reservation(
+            flavor_id=self.flavor.id,
+            start=datetime(2021, 3, 1),
+            end=datetime(2021, 3, 7),
+        )
+        mgr = manager.Manager()
+        result = mgr.create_reservation(self.context, reservation)
+        self.assertEqual(self.flavor, result.flavor)
+
+    def test_create_reservation_maintenance_window_other_flavor(
+        self, mock_worker
+    ):
+        other_flavor = self.create_flavor()
+        self.create_maintenance_window(
+            start=datetime(2021, 1, 1),
+            end=datetime(2021, 1, 31),
+            flavors=[other_flavor],
+        )
+        reservation = models.Reservation(
+            flavor_id=self.flavor.id,
+            start=datetime(2021, 1, 5),
+            end=datetime(2021, 1, 10),
+        )
+        mgr = manager.Manager()
+        result = mgr.create_reservation(self.context, reservation)
+        self.assertEqual(self.flavor, result.flavor)

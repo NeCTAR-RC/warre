@@ -110,6 +110,43 @@ class FlavorProject(db.Model):
         self.flavor_id = flavor_id
 
 
+maintenance_window_flavor = db.Table(
+    "maintenance_window_flavor",
+    db.Column(
+        "maintenance_window_id",
+        db.String(64),
+        db.ForeignKey("maintenance_window.id"),
+        primary_key=True,
+    ),
+    db.Column(
+        "flavor_id",
+        db.String(64),
+        db.ForeignKey("flavor.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+)
+
+
+class MaintenanceWindow(db.Model):
+    id = db.Column(db.String(64), primary_key=True)
+    start = db.Column(db.DateTime(), nullable=False)
+    end = db.Column(db.DateTime(), nullable=False)
+    note = db.Column(db.String(255))
+    flavors = db.relationship(
+        "Flavor",
+        secondary=maintenance_window_flavor,
+    )
+
+    def __init__(self, start, end, note=None):
+        self.id = uuidutils.generate_uuid()
+        self.start = start
+        self.end = end
+        self.note = note
+
+    def __repr__(self):
+        return f"<MaintenanceWindow '{self.id}'>"
+
+
 class Reservation(db.Model):
     PENDING_CREATE = "PENDING_CREATE"
     ERROR = "ERROR"

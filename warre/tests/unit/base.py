@@ -82,6 +82,14 @@ class TestCase(flask_testing.TestCase):
         db.session.commit()
         return flavorproject
 
+    def create_maintenance_window(self, start, end, note=None, flavors=None):
+        window = models.MaintenanceWindow(start=start, end=end, note=note)
+        if flavors:
+            window.flavors = flavors
+        db.session.add(window)
+        db.session.commit()
+        return window
+
     def create_reservation(self, project_id=PROJECT_ID, **kwargs):
         reservation = models.Reservation(**kwargs)
         reservation.user_id = USER_ID
