@@ -39,6 +39,8 @@ class ReservationCreateSchema(ma.SQLAlchemyAutoSchema):
             "project_id",
             "status",
             "lease_id",
+            "compute_flavor",
+            "status_reason",
         )
 
 
