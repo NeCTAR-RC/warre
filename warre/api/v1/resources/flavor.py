@@ -144,22 +144,17 @@ class Flavor(base.Resource):
         return self.schema.dump(flavor)
 
     def patch(self, id):
-        data = request.get_json()
+        try:
+            self.authorize("update")
+        except policy.PolicyNotAuthorized:
+            flask_restful.abort(404, message=f"Flavor {id} doesn't exist")
 
+        data = request.get_json()
         errors = schemas.flavorupdate.validate(data)
         if errors:
             flask_restful.abort(400, message=errors)
 
         flavor = self._get_flavor(id)
-        try:
-            self.authorize("update")
-        except policy.PolicyNotAuthorized:
-            flask_restful.abort(404, message=f"Flavor {id} dosn't exist")
-
-        errors = schemas.flavorupdate.validate(data)
-        if errors:
-            flask_restful.abort(401, message="Not authorized to edit")
-
         flavor = schemas.flavorupdate.load(data, instance=flavor)
         flavor.start = utils.normalise_time(flavor.start)
         flavor.end = utils.normalise_time(flavor.end)
