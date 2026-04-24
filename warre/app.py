@@ -69,7 +69,7 @@ def create_app(test_config=None, conf_file=None, init_config=True):
         pass
 
     hc_app = healthcheck.Healthcheck.app_factory(
-        {}, oslo_config_project='varroa'
+        {}, oslo_config_project='warre'
     )
     app.wsgi_app = dispatcher.DispatcherMiddleware(
         app.wsgi_app, {'/healthcheck': hc_app}
