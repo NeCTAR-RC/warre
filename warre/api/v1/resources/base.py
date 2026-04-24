@@ -43,9 +43,8 @@ class Resource(flask_restful.Resource):
         return flask.request.environ.get(keystone.REQUEST_CONTEXT_ENV, None)
 
     def paginate(self, query, args):
-        limit = args.get("limit")
-        if limit is None:
-            limit = API_LIMIT
+        limit = args.get("limit") or API_LIMIT
+        limit = max(1, min(limit, API_LIMIT))
 
         items = query.paginate(per_page=limit)
         response = {
