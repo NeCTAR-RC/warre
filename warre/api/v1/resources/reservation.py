@@ -101,7 +101,7 @@ class ReservationList(base.Resource):
             )
         except exceptions.InvalidReservation as err:
             LOG.info("Failed to create reservation: %s", err)
-            return {"error_message": str(err)}, 401
+            return {"error_message": str(err)}, 400
         except Exception as err:
             LOG.error("Failed to create reservation")
             LOG.exception(err)
@@ -183,7 +183,7 @@ class Reservation(base.Resource):
             LOG.info("Failed to extend reservation: %s", err)
             return {
                 "error_message": f"Failed to extend reservation: {err}"
-            }, 401
+            }, 400
         except Exception as err:
             LOG.error("Failed to extend reservation")
             LOG.exception(err)

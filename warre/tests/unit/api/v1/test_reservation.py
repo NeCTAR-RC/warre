@@ -236,7 +236,7 @@ class TestReservationAPI(base.ApiTestCase):
         response = self.client.patch(
             f"/v1/reservations/{reservation.id}/", json=data
         )
-        self.assert401(response)
+        self.assert400(response)
         reservation_json = response.get_json()
         self.assertEqual(
             "Failed to extend reservation: No capacity",
