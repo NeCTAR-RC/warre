@@ -15,6 +15,7 @@ import datetime
 from unittest import mock
 
 from warre import models
+from warre import quota
 from warre.tests.unit import base
 
 
@@ -117,6 +118,24 @@ class TestReservationAPI(base.ApiTestCase):
         response = self.client.post("/v1/reservations/", json=data)
         self.assert200(response)
         self.assertEqual(2, response.get_json().get("instance_count"))
+
+    def test_create_reservation_hours_quota_includes_instance_count(self):
+        enforcer = quota.get_enforcer.return_value
+        enforcer.reset_mock()
+        data = {
+            "flavor_id": self.flavor.id,
+            "start": "2020-01-01T00:00:00+00:00",
+            "end": "2020-01-01T04:00:00+00:00",
+            "instance_count": 3,
+        }
+        response = self.client.post("/v1/reservations/", json=data)
+        self.assert200(response)
+        # total_hours=4, instance_count=3 -> 12 hours enforced
+        hours_calls = [
+            c for c in enforcer.enforce.call_args_list if "hours" in c.args[1]
+        ]
+        self.assertEqual(1, len(hours_calls))
+        self.assertEqual(12, hours_calls[0].args[1]["hours"])
 
     def test_create_reservation_noinput(self):
         data = {}

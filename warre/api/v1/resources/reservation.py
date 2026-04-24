@@ -91,7 +91,9 @@ class ReservationList(base.Resource):
         reservation.start = utils.normalise_time(reservation.start)
 
         try:
-            self.check_limit("hours", reservation.total_hours)
+            self.check_limit(
+                "hours", reservation.total_hours * reservation.instance_count
+            )
         except limit_exceptions.ProjectOverLimit as e:
             return {"error_message": str(e)}, 413
 
@@ -171,7 +173,9 @@ class Reservation(base.Resource):
         )
 
         try:
-            self.check_limit("hours", prolong_hours)
+            self.check_limit(
+                "hours", prolong_hours * reservation.instance_count
+            )
         except limit_exceptions.ProjectOverLimit as e:
             return {"error_message": str(e)}, 413
 
