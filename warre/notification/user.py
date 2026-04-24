@@ -54,7 +54,10 @@ class UserNotifierBase:
             os.path.join(os.path.dirname(__file__), "../", "templates")
         )
         LOG.debug(f"Using template_dir {template_dir}")
-        env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir))
+        env = jinja2.Environment(
+            loader=jinja2.FileSystemLoader(template_dir),
+            autoescape=jinja2.select_autoescape(["tmpl", "html"]),
+        )
         template = env.get_template(tmpl)
         template = template.render(context)
         return template
