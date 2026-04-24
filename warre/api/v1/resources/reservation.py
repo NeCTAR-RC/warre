@@ -15,6 +15,7 @@ import math
 
 from flask import request
 import flask_restful
+from flask_restful import inputs
 from flask_restful import reqparse
 import marshmallow
 from oslo_limit import exception as limit_exceptions
@@ -51,7 +52,9 @@ class ReservationList(base.Resource):
 
         parser = reqparse.RequestParser()
         parser.add_argument("limit", type=int, location="args")
-        parser.add_argument("all_projects", type=bool, location="args")
+        parser.add_argument(
+            "all_projects", type=inputs.boolean, location="args"
+        )
         parser.add_argument("project_id", type=str, location="args")
         parser.add_argument("flavor_id", type=str, location="args")
         args = parser.parse_args()

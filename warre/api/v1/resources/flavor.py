@@ -62,7 +62,9 @@ class FlavorList(base.Resource):
 
         parser = reqparse.RequestParser()
         parser.add_argument("limit", type=int, location="args")
-        parser.add_argument("all_projects", type=bool, location="args")
+        parser.add_argument(
+            "all_projects", type=inputs.boolean, location="args"
+        )
         parser.add_argument("category", type=str, location="args")
         parser.add_argument("availability_zone", type=str, location="args")
         args = parser.parse_args()
