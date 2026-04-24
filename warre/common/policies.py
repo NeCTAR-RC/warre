@@ -95,7 +95,7 @@ flavor_rules = [
     ),
     policy.DocumentedRuleDefault(
         name=FLAVOR_PREFIX % "update",
-        check_str=f"rule:{ADMIN_OR_OWNER}",
+        check_str=f"rule:{ADMIN_OR_WRITER}",
         description="Update a flavor",
         operations=[{"path": "/v1/flavors/{flavor_id}/", "method": "PATCH"}],
     ),
