@@ -34,8 +34,7 @@ base_rules = [
     ),
     policy.RuleDefault(
         name="reader",
-        check_str="role:reader or role:read_only "
-        "or role:cloud_admin or role:helpdesk",
+        check_str="role:read_only or role:cloud_admin or role:helpdesk",
     ),
     policy.RuleDefault(
         name="writer", check_str="role:cloud_admin or role:helpdesk"
