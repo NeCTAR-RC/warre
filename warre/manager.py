@@ -31,7 +31,9 @@ class Manager:
         self.worker_api = worker_api.WorkerAPI()
         self.blazar = blazar.BlazarClient()
 
-    def create_reservation(self, context, reservation):
+    def create_reservation(
+        self, context, reservation, bypass_maintenance=False
+    ):
         flavor = db.session.query(models.Flavor).get(reservation.flavor_id)
         if not flavor.active:
             raise exceptions.InvalidReservation("Flavor is not available")
@@ -66,21 +68,22 @@ class Manager:
                 f"reservation end time of {reservation.end}"
             )
 
-        maintenance_windows = (
-            db.session.query(models.MaintenanceWindow)
-            .filter(models.MaintenanceWindow.end >= reservation.start)
-            .filter(models.MaintenanceWindow.start <= reservation.end)
-            .filter(
-                models.MaintenanceWindow.flavors.any(
-                    models.Flavor.id == flavor.id
+        if not bypass_maintenance:
+            maintenance_windows = (
+                db.session.query(models.MaintenanceWindow)
+                .filter(models.MaintenanceWindow.end >= reservation.start)
+                .filter(models.MaintenanceWindow.start <= reservation.end)
+                .filter(
+                    models.MaintenanceWindow.flavors.any(
+                        models.Flavor.id == flavor.id
+                    )
                 )
+                .count()
             )
-            .count()
-        )
-        if maintenance_windows > 0:
-            raise exceptions.InvalidReservation(
-                "Reservation conflicts with a maintenance window"
-            )
+            if maintenance_windows > 0:
+                raise exceptions.InvalidReservation(
+                    "Reservation conflicts with a maintenance window"
+                )
 
         free_slots = self.flavor_free_slots(
             context,
@@ -88,6 +91,7 @@ class Manager:
             reservation.start,
             reservation.end,
             reservation,
+            include_maintenance=not bypass_maintenance,
         )
 
         if free_slots:
@@ -168,7 +172,15 @@ class Manager:
         db.session.delete(flavor)
         db.session.commit()
 
-    def flavor_free_slots(self, context, flavor, start, end, reservation=None):
+    def flavor_free_slots(
+        self,
+        context,
+        flavor,
+        start,
+        end,
+        reservation=None,
+        include_maintenance=True,
+    ):
         """Get the free slots of a flavor
         Algorithm:
         1. Get slots from flavor table as the total resource
@@ -176,6 +188,8 @@ class Manager:
         3. Calculate the free slots
 
         reservation - used to exclude an existing reservation when extending
+        include_maintenance - when False, treat maintenance windows as not
+            occupying any slots (admin bypass for testing during a window)
         """
         if not flavor.active:
             return []
@@ -209,17 +223,20 @@ class Manager:
             query = query.filter(models.Reservation.id != reservation.id)
         reservations = query.all()
 
-        maintenance_windows = (
-            db.session.query(models.MaintenanceWindow)
-            .filter(models.MaintenanceWindow.end >= start)
-            .filter(models.MaintenanceWindow.start <= end)
-            .filter(
-                models.MaintenanceWindow.flavors.any(
-                    models.Flavor.id == flavor.id
+        if include_maintenance:
+            maintenance_windows = (
+                db.session.query(models.MaintenanceWindow)
+                .filter(models.MaintenanceWindow.end >= start)
+                .filter(models.MaintenanceWindow.start <= end)
+                .filter(
+                    models.MaintenanceWindow.flavors.any(
+                        models.Flavor.id == flavor.id
+                    )
                 )
+                .all()
             )
-            .all()
-        )
+        else:
+            maintenance_windows = []
 
         # the real thing begins here
         # Pass 1: segmentation and marking

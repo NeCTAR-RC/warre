@@ -231,6 +231,13 @@ reservation_rules = [
         operations=[{"path": "/v1/reservations/", "method": "GET"}],
     ),
     policy.DocumentedRuleDefault(
+        name=RESERVATION_PREFIX % "create:bypass_maintenance",
+        check_str="rule:admin_required",
+        description="Create a reservation that overlaps a maintenance "
+        "window (intended for admin testing during maintenance).",
+        operations=[{"path": "/v1/reservations/", "method": "POST"}],
+    ),
+    policy.DocumentedRuleDefault(
         name=RESERVATION_PREFIX % "update",
         check_str=f"rule:{ADMIN_OR_OWNER}",
         description="Update a reservation",

@@ -97,9 +97,15 @@ class ReservationList(base.Resource):
         except limit_exceptions.ProjectOverLimit as e:
             return {"error_message": str(e)}, 413
 
+        bypass_maintenance = self.authorize(
+            "create:bypass_maintenance", do_raise=False
+        )
+
         try:
             reservation = self.manager.create_reservation(
-                self.context, reservation
+                self.context,
+                reservation,
+                bypass_maintenance=bypass_maintenance,
             )
         except exceptions.InvalidReservation as err:
             LOG.info("Failed to create reservation: %s", err)

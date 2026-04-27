@@ -893,3 +893,49 @@ class TestCreateReservationMaintenanceWindow(base.TestCase):
         mgr = manager.Manager()
         result = mgr.create_reservation(self.context, reservation)
         self.assertEqual(self.flavor, result.flavor)
+
+    def test_create_reservation_bypass_maintenance_window(self, mock_worker):
+        self.create_maintenance_window(
+            start=datetime(2021, 1, 1),
+            end=datetime(2021, 1, 10),
+            flavors=[self.flavor],
+        )
+        reservation = models.Reservation(
+            flavor_id=self.flavor.id,
+            start=datetime(2021, 1, 3),
+            end=datetime(2021, 1, 5),
+        )
+        mgr = manager.Manager()
+        result = mgr.create_reservation(
+            self.context, reservation, bypass_maintenance=True
+        )
+        self.assertEqual(self.flavor, result.flavor)
+
+    def test_create_reservation_bypass_still_enforces_capacity(
+        self, mock_worker
+    ):
+        self.create_maintenance_window(
+            start=datetime(2021, 1, 1),
+            end=datetime(2021, 1, 10),
+            flavors=[self.flavor],
+        )
+        # Existing reservation already consumes the only slot during the
+        # maintenance window — bypass must not let us double-book.
+        self.create_reservation(
+            flavor_id=self.flavor.id,
+            start=datetime(2021, 1, 3),
+            end=datetime(2021, 1, 5),
+            status=models.Reservation.ALLOCATED,
+        )
+        reservation = models.Reservation(
+            flavor_id=self.flavor.id,
+            start=datetime(2021, 1, 3),
+            end=datetime(2021, 1, 5),
+        )
+        mgr = manager.Manager()
+        with self.assertRaisesRegex(
+            exceptions.InvalidReservation, "No capacity"
+        ):
+            mgr.create_reservation(
+                self.context, reservation, bypass_maintenance=True
+            )

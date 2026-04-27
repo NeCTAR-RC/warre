@@ -262,9 +262,42 @@ class TestReservationAPI(base.ApiTestCase):
             reservation_json.get("error_message"),
         )
 
+    def test_create_reservation_during_maintenance_window_denied(self):
+        self.create_maintenance_window(
+            start=datetime.datetime(2020, 1, 1),
+            end=datetime.datetime(2020, 1, 10),
+            flavors=[self.flavor],
+        )
+        data = {
+            "flavor_id": self.flavor.id,
+            "start": "2020-01-02T00:00:00+00:00",
+            "end": "2020-01-02T01:00:00+00:00",
+        }
+        response = self.client.post("/v1/reservations/", json=data)
+        self.assert400(response)
+        self.assertIn(
+            "maintenance window", response.get_json().get("error_message")
+        )
 
+
+@mock.patch("warre.quota.get_enforcer", new=mock.Mock())
 class TestAdminReservationAPI(TestReservationAPI):
     ROLES = ["admin"]
+
+    def test_create_reservation_during_maintenance_window_denied(self):
+        # Admins are allowed to bypass the maintenance window check.
+        self.create_maintenance_window(
+            start=datetime.datetime(2020, 1, 1),
+            end=datetime.datetime(2020, 1, 10),
+            flavors=[self.flavor],
+        )
+        data = {
+            "flavor_id": self.flavor.id,
+            "start": "2020-01-02T00:00:00+00:00",
+            "end": "2020-01-02T01:00:00+00:00",
+        }
+        response = self.client.post("/v1/reservations/", json=data)
+        self.assert200(response)
 
     def test_list_reservations_all_projects(self):
         self.create_reservation(
