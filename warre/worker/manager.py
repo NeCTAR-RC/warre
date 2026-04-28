@@ -116,6 +116,20 @@ class Manager:
         db.session.commit()
 
     @app_context
+    def clean_old_maintenance_windows(self):
+        LOG.info("Cleaning finished maintenance windows")
+        now = datetime.datetime.utcnow()
+        windows = (
+            db.session.query(models.MaintenanceWindow)
+            .filter(models.MaintenanceWindow.end < now)
+            .all()
+        )
+        for window in windows:
+            LOG.info(f"Deleting finished maintenance window {window.id}")
+            db.session.delete(window)
+        db.session.commit()
+
+    @app_context
     def notify_exists(self):
         reservations = (
             db.session.query(models.Reservation)

@@ -39,6 +39,11 @@ class PeriodicTaskService(cotyledon.Service):
         self.manager.clean_old_reservations()
 
     @periodics.periodic(CONF.worker.periodic_task_interval)
+    def clean_old_maintenance_windows(self):
+        LOG.info("Running periodic task clean_old_maintenance_windows")
+        self.manager.clean_old_maintenance_windows()
+
+    @periodics.periodic(CONF.worker.periodic_task_interval)
     def notify_exists(self):
         """Send reservation exists notifications
 
@@ -52,6 +57,7 @@ class PeriodicTaskService(cotyledon.Service):
 
         callables = [
             (self.clean_old_reservations, (), {}),
+            (self.clean_old_maintenance_windows, (), {}),
             (self.notify_exists, (), {}),
         ]
         self.worker = periodics.PeriodicWorker(callables)

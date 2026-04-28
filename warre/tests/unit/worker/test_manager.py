@@ -111,6 +111,35 @@ class TestManager(base.TestCase):
         self.assertEqual(2, len(reservations))
 
     @freeze_time("2021-01-27")
+    def test_clean_old_maintenance_windows(self, mock_app):
+        flavor = self.create_flavor()
+        finished = self.create_maintenance_window(
+            start=datetime.datetime(2021, 1, 10),
+            end=datetime.datetime(2021, 1, 20),
+            flavors=[flavor],
+        )
+        ongoing = self.create_maintenance_window(
+            start=datetime.datetime(2021, 1, 25),
+            end=datetime.datetime(2021, 1, 30),
+            flavors=[flavor],
+        )
+        future = self.create_maintenance_window(
+            start=datetime.datetime(2021, 2, 1),
+            end=datetime.datetime(2021, 2, 5),
+            flavors=[flavor],
+        )
+
+        self.assertEqual(3, db.session.query(models.MaintenanceWindow).count())
+        manager = worker_manager.Manager()
+        manager.clean_old_maintenance_windows()
+
+        remaining_ids = {
+            w.id for w in db.session.query(models.MaintenanceWindow).all()
+        }
+        self.assertEqual({ongoing.id, future.id}, remaining_ids)
+        self.assertNotIn(finished.id, remaining_ids)
+
+    @freeze_time("2021-01-27")
     @mock.patch("warre.common.rpc.get_notifier")
     def test_notify_exists(self, mock_get_notifier, mock_app):
         notifier = mock_get_notifier.return_value
