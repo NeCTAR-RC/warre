@@ -14,6 +14,8 @@
 from datetime import datetime
 from unittest import mock
 
+from freezegun import freeze_time
+
 from warre.extensions import db
 from warre import models
 from warre.tests.unit import base
@@ -84,6 +86,26 @@ class TestMaintenanceWindowAPI(base.ApiTestCase):
         data = {
             "start": "2026-05-01T00:00:00+00:00",
             "end": "2026-05-01T00:00:00+00:00",
+        }
+        response = self.client.post("/v1/maintenancewindows/", json=data)
+        self.assertStatus(response, 400)
+
+    @freeze_time("2026-05-15")
+    def test_create_start_in_past(self):
+        data = {
+            "start": "2026-05-01T00:00:00+00:00",
+            "end": "2026-05-20T00:00:00+00:00",
+            "flavor_ids": [self.flavor.id],
+        }
+        response = self.client.post("/v1/maintenancewindows/", json=data)
+        self.assertStatus(response, 400)
+
+    @freeze_time("2026-06-01")
+    def test_create_entirely_in_past(self):
+        data = {
+            "start": "2026-05-01T00:00:00+00:00",
+            "end": "2026-05-10T00:00:00+00:00",
+            "flavor_ids": [self.flavor.id],
         }
         response = self.client.post("/v1/maintenancewindows/", json=data)
         self.assertStatus(response, 400)
@@ -162,6 +184,38 @@ class TestMaintenanceWindowAPI(base.ApiTestCase):
             json={"end": "2026-04-01T00:00:00+00:00"},
         )
         self.assertStatus(response, 400)
+
+    @freeze_time("2026-05-15")
+    def test_update_start_to_past(self):
+        window = self.create_maintenance_window(
+            start=datetime(2026, 6, 1),
+            end=datetime(2026, 6, 10),
+            flavors=[self.flavor],
+        )
+        response = self.client.patch(
+            f"/v1/maintenancewindows/{window.id}/",
+            json={
+                "start": "2026-05-01T00:00:00+00:00",
+                "end": "2026-05-10T00:00:00+00:00",
+            },
+        )
+        self.assertStatus(response, 400)
+
+    @freeze_time("2026-05-15")
+    def test_update_note_on_started_window(self):
+        # An already-started window (start in the past) can still be patched
+        # for fields that don't change start/end.
+        window = self.create_maintenance_window(
+            start=datetime(2026, 5, 1),
+            end=datetime(2026, 5, 20),
+            flavors=[self.flavor],
+        )
+        response = self.client.patch(
+            f"/v1/maintenancewindows/{window.id}/",
+            json={"note": "still ongoing"},
+        )
+        self.assert200(response)
+        self.assertEqual("still ongoing", response.get_json()["note"])
 
     def test_update_replace_flavors(self):
         other_flavor = self.create_flavor()
