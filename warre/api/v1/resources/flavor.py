@@ -67,6 +67,7 @@ class FlavorList(base.Resource):
         )
         parser.add_argument("category", type=str, location="args")
         parser.add_argument("availability_zone", type=str, location="args")
+        parser.add_argument("active", type=inputs.boolean, location="args")
         args = parser.parse_args()
         query = self._get_flavors()
 
@@ -84,6 +85,9 @@ class FlavorList(base.Resource):
         az = args.get("availability_zone")
         if az:
             query = query.filter(models.Flavor.availability_zone == az)
+
+        if args.get("active") is not None:
+            query = query.filter(models.Flavor.active == args.get("active"))
 
         query = query.order_by(models.Flavor.name, models.Flavor.memory_mb)
         return self.paginate(query, args)

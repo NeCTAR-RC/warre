@@ -122,6 +122,27 @@ class TestAdminFlavorAPI(TestFlavorAPI):
         results = response.get_json().get("results")
         self.assertEqual(2, len(results))
 
+    def test_flavor_list_filter_active(self):
+        self.create_flavor(name="active1", active=True)
+        self.create_flavor(name="active2", active=True)
+        self.create_flavor(name="inactive", active=False)
+
+        response = self.client.get("/v1/flavors/?all_projects=1")
+        self.assert200(response)
+        self.assertEqual(3, len(response.get_json().get("results")))
+
+        response = self.client.get("/v1/flavors/?all_projects=1&active=1")
+        self.assert200(response)
+        results = response.get_json().get("results")
+        self.assertEqual(2, len(results))
+        self.assertTrue(all(r["active"] for r in results))
+
+        response = self.client.get("/v1/flavors/?all_projects=1&active=0")
+        self.assert200(response)
+        results = response.get_json().get("results")
+        self.assertEqual(1, len(results))
+        self.assertEqual("inactive", results[0]["name"])
+
     def test_flavor_get_private_no_access(self):
         flavor = self.create_flavor(is_public=False)
         response = self.client.get(f"/v1/flavors/{flavor.id}/")
