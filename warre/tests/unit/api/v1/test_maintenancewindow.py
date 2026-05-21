@@ -48,6 +48,7 @@ class TestMaintenanceWindowAPI(base.ApiTestCase):
         self.assertEqual(1, len(results[0]["flavors"]))
         self.assertEqual(self.flavor.id, results[0]["flavors"][0]["id"])
 
+    @freeze_time("2026-04-15")
     def test_create(self):
         data = {
             "start": "2026-05-01T00:00:00+00:00",
@@ -63,6 +64,7 @@ class TestMaintenanceWindowAPI(base.ApiTestCase):
         self.assertEqual(self.flavor.id, result["flavors"][0]["id"])
         self.assertEqual(self.flavor.name, result["flavors"][0]["name"])
 
+    @freeze_time("2026-04-15")
     def test_create_no_flavors(self):
         data = {
             "start": "2026-05-01T00:00:00+00:00",
@@ -110,6 +112,7 @@ class TestMaintenanceWindowAPI(base.ApiTestCase):
         response = self.client.post("/v1/maintenancewindows/", json=data)
         self.assertStatus(response, 400)
 
+    @freeze_time("2026-04-15")
     def test_create_bad_flavor(self):
         data = {
             "start": "2026-05-01T00:00:00+00:00",
@@ -306,6 +309,7 @@ class TestMaintenanceWindowAPI(base.ApiTestCase):
         self.client.delete(f"/v1/maintenancewindows/{window.id}/")
         self.assertEqual(1, db.session.query(models.Flavor).count())
 
+    @freeze_time("2026-04-15")
     def test_create_conflicts_with_reservation(self):
         self.create_reservation(
             flavor_id=self.flavor.id,
@@ -321,6 +325,7 @@ class TestMaintenanceWindowAPI(base.ApiTestCase):
         response = self.client.post("/v1/maintenancewindows/", json=data)
         self.assertStatus(response, 409)
 
+    @freeze_time("2026-04-15")
     def test_create_no_conflict_different_flavor(self):
         other_flavor = self.create_flavor()
         self.create_reservation(
@@ -337,6 +342,7 @@ class TestMaintenanceWindowAPI(base.ApiTestCase):
         response = self.client.post("/v1/maintenancewindows/", json=data)
         self.assertStatus(response, 201)
 
+    @freeze_time("2026-04-15")
     def test_create_no_conflict_non_overlapping_time(self):
         self.create_reservation(
             flavor_id=self.flavor.id,
@@ -352,6 +358,7 @@ class TestMaintenanceWindowAPI(base.ApiTestCase):
         response = self.client.post("/v1/maintenancewindows/", json=data)
         self.assertStatus(response, 201)
 
+    @freeze_time("2026-04-15")
     def test_create_no_conflict_completed_reservation(self):
         self.create_reservation(
             flavor_id=self.flavor.id,
