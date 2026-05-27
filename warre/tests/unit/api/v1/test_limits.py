@@ -47,6 +47,6 @@ class TestAdminLimitsAPI(TestLimitsAPI):
     ROLES = ["admin"]
 
     @mock.patch("warre.quota.get_enforcer")
-    def test_limits_list_project(self, mock_get_enforer):
+    def test_limits_list_project(self, mock_get_enforcer):
         response = self.client.get("/v1/limits/?project_id=123")
         self.assert200(response)
