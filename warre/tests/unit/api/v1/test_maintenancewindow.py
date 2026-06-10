@@ -158,6 +158,7 @@ class TestMaintenanceWindowAPI(base.ApiTestCase):
         self.assertIn("2026-05-02", result["end"])
         self.assertEqual(1, len(result["flavors"]))
 
+    @freeze_time("2026-04-15")
     def test_update_times(self):
         window = self.create_maintenance_window(
             start=datetime(2026, 5, 1),
@@ -262,6 +263,7 @@ class TestMaintenanceWindowAPI(base.ApiTestCase):
         )
         self.assertStatus(response, 404)
 
+    @freeze_time("2026-04-15")
     def test_update_conflicts_with_reservation(self):
         window = self.create_maintenance_window(
             start=datetime(2026, 5, 1),
