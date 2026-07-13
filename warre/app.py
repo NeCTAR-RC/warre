@@ -25,6 +25,7 @@ from warre.api import v1 as api_v1
 from warre.common import config
 from warre.common import keystone
 from warre.common import rpc
+from warre.common import sentry
 from warre import extensions
 from warre import models  # noqa
 
@@ -56,6 +57,7 @@ def create_app(test_config=None, conf_file=None, init_config=True):
 
     if init_config:
         config.setup_logging(CONF)
+        sentry.setup()
 
     api_bp = flask.Blueprint("api", __name__, url_prefix="/")
     register_extensions(app, api_bp)

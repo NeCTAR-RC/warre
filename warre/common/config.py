@@ -73,6 +73,21 @@ warre_opts = [
     ),
 ]
 
+sentry_opts = [
+    cfg.StrOpt(
+        "dsn",
+        secret=True,
+        help="Sentry/GlitchTip DSN to report errors to. Error reporting "
+        "is disabled if not set.",
+    ),
+    cfg.StrOpt(
+        "environment",
+        help="Environment name to tag reported errors with "
+        "(e.g. production, testing).",
+    ),
+]
+
+cfg.CONF.register_opts(sentry_opts, group="sentry")
 cfg.CONF.register_opts(warre_opts, group="warre")
 cfg.CONF.register_opts(blazar_opts, group="blazar")
 cfg.CONF.register_opts(worker_opts, group="worker")
@@ -115,6 +130,7 @@ def list_opts():
         ("worker", worker_opts),
         ("database", database_opts),
         ("flask", flask_opts),
+        ("sentry", sentry_opts),
         add_auth_opts(),
     ]
 

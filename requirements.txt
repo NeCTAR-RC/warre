@@ -22,4 +22,5 @@ cotyledon
 pymysql
 python-memcached
 jinja2
+sentry-sdk
 taynacclient>=1.2.0

@@ -15,6 +15,7 @@ from oslo_config import cfg
 
 from warre.common import config
 from warre.common import rpc
+from warre.common import sentry
 
 
 def prepare_service(argv=None):
@@ -22,4 +23,5 @@ def prepare_service(argv=None):
     argv = argv or []
     config.init(argv[1:])
     config.setup_logging(cfg.CONF)
+    sentry.setup()
     rpc.init()
