@@ -72,9 +72,8 @@ class NotificationEndpoints:
                 .filter_by(lease_id=lease_id)
                 .one()
             )
-        except s_exc.InvalidRequestError as e:
-            LOG.error("No reservation with lease ID %s", lease_id)
-            LOG.exception(e)
+        except s_exc.InvalidRequestError:
+            LOG.exception("No reservation with lease ID %s", lease_id)
         else:
             status = None
             if event == "start":

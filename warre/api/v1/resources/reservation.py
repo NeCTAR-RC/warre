@@ -110,9 +110,8 @@ class ReservationList(base.Resource):
         except exceptions.InvalidReservation as err:
             LOG.info("Failed to create reservation: %s", err)
             return {"error_message": str(err)}, 400
-        except Exception as err:
-            LOG.error("Failed to create reservation")
-            LOG.exception(err)
+        except Exception:
+            LOG.exception("Failed to create reservation")
             return {"error_message": "Unexpected API Error."}, 500
 
         return schemas.reservation.dump(reservation)
@@ -194,9 +193,8 @@ class Reservation(base.Resource):
             return {
                 "error_message": f"Failed to extend reservation: {err}"
             }, 400
-        except Exception as err:
-            LOG.error("Failed to extend reservation")
-            LOG.exception(err)
+        except Exception:
+            LOG.exception("Failed to extend reservation")
             return {"error_message": "Unexpected API Error."}, 500
 
         return self.schema.dump(reservation)

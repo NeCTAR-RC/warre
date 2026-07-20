@@ -64,7 +64,9 @@ class Manager:
         except Exception as e:
             reservation.status = models.Reservation.ERROR
             reservation.status_reason = str(e)[:255]
-            LOG.exception(e)
+            LOG.exception(
+                "Failed to create lease for reservation %s", reservation.id
+            )
         else:
             reservation.lease_id = lease["id"]
             reservation.compute_flavor = lease.get("reservations")[0].get(
@@ -111,7 +113,7 @@ class Manager:
             .all()
         )
         for reservation in reservations:
-            LOG.info(f"Deleting finished reservation {reservation}")
+            LOG.info("Deleting finished reservation %s", reservation)
             db.session.delete(reservation)
         db.session.commit()
 
@@ -125,7 +127,7 @@ class Manager:
             .all()
         )
         for window in windows:
-            LOG.info(f"Deleting finished maintenance window {window.id}")
+            LOG.info("Deleting finished maintenance window %s", window.id)
             db.session.delete(window)
         db.session.commit()
 
@@ -142,9 +144,10 @@ class Manager:
         nova = clients.get_novaclient(k_session)
         for reservation in reservations:
             if reservation.end < datetime.datetime.utcnow():
-                LOG.warn(
-                    f"Reservation {reservation} has ended but still "
-                    "active, marking as COMPLETE"
+                LOG.warning(
+                    "Reservation %s has ended but still "
+                    "active, marking as COMPLETE",
+                    reservation,
                 )
                 reservation.status = models.Reservation.COMPLETE
                 db.session.add(reservation)
@@ -158,13 +161,15 @@ class Manager:
                 }
                 instances = nova.servers.list(search_opts=opts)
                 if instances:
-                    LOG.debug(f"Sending in_use notification for {reservation}")
+                    LOG.debug(
+                        "Sending in_use notification for %s", reservation
+                    )
                     self.notifier.info(
                         ctxt,
                         "warre.reservation.in_use",
                         notifications.format_reservation(reservation),
                     )
-            LOG.debug(f"Sending exists notification for {reservation}")
+            LOG.debug("Sending exists notification for %s", reservation)
             self.notifier.info(
                 ctxt,
                 "warre.reservation.exists",

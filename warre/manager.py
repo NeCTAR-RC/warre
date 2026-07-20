@@ -152,13 +152,13 @@ class Manager:
             self.blazar.update_lease(
                 reservation.lease_id, end_date=reservation.end
             )
-        except Exception as e:
-            LOG.exception(e)
+        except Exception:
+            LOG.exception("Failed to extend lease %s", reservation.lease_id)
             raise exceptions.InvalidReservation("Failed to extend lease")
         else:
             db.session.add(reservation)
             db.session.commit()
-            LOG.info(f"Updated {reservation}")
+            LOG.info("Updated %s", reservation)
             return reservation
 
     def delete_flavor(self, context, flavor):

@@ -29,7 +29,7 @@ LOG = logging.getLogger(__name__)
 def send_message(reservation, event):
     handled_events = ["create", "start", "end", "before_end"]
     if event not in handled_events:
-        LOG.error(f"Event {event} not handled by user notifications")
+        LOG.error("Event %s not handled by user notifications", event)
 
     notifier = stevedore_driver.DriverManager(
         namespace="warre.user.notifier",
@@ -53,7 +53,7 @@ class UserNotifierBase:
         template_dir = os.path.realpath(
             os.path.join(os.path.dirname(__file__), "../", "templates")
         )
-        LOG.debug(f"Using template_dir {template_dir}")
+        LOG.debug("Using template_dir %s", template_dir)
         env = jinja2.Environment(
             loader=jinja2.FileSystemLoader(template_dir),
             autoescape=jinja2.select_autoescape(["tmpl", "html"]),
