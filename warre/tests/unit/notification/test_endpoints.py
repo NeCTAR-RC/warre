@@ -52,15 +52,21 @@ class TestEndpoints(base.TestCase):
     def test_sample_unknown_lease(
         self, mock_app, mock_get_notifier, mock_user
     ):
-        self._test_sample(
-            "lease.event.end_lease",
-            models.Reservation.ALLOCATED,
-            lease_id=None,
-        )
+        with self.assertLogs(
+            "warre.notification.endpoints", level="WARNING"
+        ) as cm:
+            self._test_sample(
+                "lease.event.end_lease",
+                models.Reservation.ALLOCATED,
+                lease_id=None,
+            )
 
         notifier = mock_get_notifier.return_value
         notifier.info.assert_not_called()
         mock_user.send_message.assert_not_called()
+        self.assertEqual(1, len(cm.records))
+        self.assertEqual("WARNING", cm.records[0].levelname)
+        self.assertIn("No reservation with lease ID", cm.output[0])
 
     def _test_sample(self, event, status, lease_id="test-lease-id"):
         flavor = self.create_flavor()

@@ -72,8 +72,15 @@ class NotificationEndpoints:
                 .filter_by(lease_id=lease_id)
                 .one()
             )
-        except s_exc.InvalidRequestError:
-            LOG.exception("No reservation with lease ID %s", lease_id)
+        except s_exc.NoResultFound:
+            # Leases warre doesn't manage (created directly in Blazar,
+            # or orphaned by a failed reservation create) emit events
+            # on the same exchange; there is nothing to update for them.
+            LOG.warning(
+                "No reservation with lease ID %s, ignoring %s event",
+                lease_id,
+                event,
+            )
         else:
             status = None
             if event == "start":
