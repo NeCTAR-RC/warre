@@ -148,7 +148,14 @@ class Reservation(base.Resource):
         except policy.PolicyNotAuthorized:
             flask_restful.abort(404, message=f"Reservation {id} doesn't exist")
 
-        self.manager.delete_reservation(self.context, reservation)
+        try:
+            self.manager.delete_reservation(self.context, reservation)
+        except Exception:
+            LOG.exception("Failed to delete reservation %s", id)
+            return {
+                "error_message": "Failed to delete reservation, "
+                "please try again later"
+            }, 500
         return "", 204
 
     def patch(self, id):

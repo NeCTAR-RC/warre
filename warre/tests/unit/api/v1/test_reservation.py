@@ -14,6 +14,7 @@
 import datetime
 from unittest import mock
 
+from warre.extensions import db
 from warre import models
 from warre import quota
 from warre.tests.unit import base
@@ -171,6 +172,48 @@ class TestReservationAPI(base.ApiTestCase):
         self.assertEqual(reservation.id, reservation_json.get("id"))
         self.assertEqual(
             reservation.flavor.id, reservation_json["flavor"]["id"]
+        )
+
+    @mock.patch("warre.common.blazar.BlazarClient")
+    def test_delete_reservation(self, mock_blazar):
+        reservation = self.create_reservation(
+            flavor_id=self.flavor.id,
+            start=datetime.datetime(2021, 1, 1),
+            end=datetime.datetime(2021, 1, 2),
+        )
+        reservation.lease_id = "foo"
+
+        response = self.client.delete(f"/v1/reservations/{reservation.id}/")
+        self.assertStatus(response, 204)
+        mock_blazar.return_value.delete_lease.assert_called_once_with("foo")
+        self.assertIsNone(
+            db.session.query(models.Reservation)
+            .filter_by(id=reservation.id)
+            .first()
+        )
+
+    @mock.patch("warre.common.blazar.BlazarClient")
+    def test_delete_reservation_blazar_error(self, mock_blazar):
+        reservation = self.create_reservation(
+            flavor_id=self.flavor.id,
+            start=datetime.datetime(2021, 1, 1),
+            end=datetime.datetime(2021, 1, 2),
+        )
+        reservation.lease_id = "foo"
+        mock_blazar.return_value.delete_lease.side_effect = Exception(
+            "ERROR: Invalid lease status."
+        )
+
+        response = self.client.delete(f"/v1/reservations/{reservation.id}/")
+        self.assertStatus(response, 500)
+        self.assertEqual(
+            "Failed to delete reservation, please try again later",
+            response.get_json().get("error_message"),
+        )
+        self.assertIsNotNone(
+            db.session.query(models.Reservation)
+            .filter_by(id=reservation.id)
+            .first()
         )
 
     def test_update_reservation_invalid_new_end(self):
