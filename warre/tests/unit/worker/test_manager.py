@@ -240,6 +240,52 @@ class TestManager(base.TestCase):
     @freeze_time("2021-01-27")
     @mock.patch("warre.common.clients.get_novaclient")
     @mock.patch("warre.common.rpc.get_notifier")
+    def test_notify_exists_nova_error(
+        self, mock_get_notifier, mock_nova, mock_app
+    ):
+        notifier = mock_get_notifier.return_value
+
+        flavor = self.create_flavor()
+        res1 = self.create_reservation(
+            flavor_id=flavor.id,
+            status="ACTIVE",
+            start=datetime.datetime(2021, 1, 10),
+            end=datetime.datetime(2021, 1, 30),
+        )
+        res1.compute_flavor = "compute-flavor-id"
+        res2 = self.create_reservation(
+            flavor_id=flavor.id,
+            status="ACTIVE",
+            start=datetime.datetime(2021, 1, 11),
+            end=datetime.datetime(2021, 1, 30),
+        )
+        res2.compute_flavor = "compute-flavor-id"
+
+        nova_client = mock_nova.return_value
+        nova_client.servers.list.side_effect = Exception("Unknown Error")
+        manager = worker_manager.Manager()
+        manager.notify_exists()
+
+        self.assertEqual(2, nova_client.servers.list.call_count)
+        notifier.info.assert_has_calls(
+            [
+                mock.call(
+                    mock.ANY,
+                    "warre.reservation.exists",
+                    notifications.format_reservation(res1),
+                ),
+                mock.call(
+                    mock.ANY,
+                    "warre.reservation.exists",
+                    notifications.format_reservation(res2),
+                ),
+            ]
+        )
+        self.assertEqual(2, notifier.info.call_count)
+
+    @freeze_time("2021-01-27")
+    @mock.patch("warre.common.clients.get_novaclient")
+    @mock.patch("warre.common.rpc.get_notifier")
     def test_notify_exists_not_in_use(
         self, mock_get_notifier, mock_nova, mock_app
     ):

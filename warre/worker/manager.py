@@ -159,7 +159,16 @@ class Manager:
                     "tenant_id": reservation.project_id,
                     "flavor": reservation.compute_flavor,
                 }
-                instances = nova.servers.list(search_opts=opts)
+                try:
+                    instances = nova.servers.list(search_opts=opts)
+                except Exception as e:
+                    LOG.warning(
+                        "Failed to list instances for reservation %s, "
+                        "skipping in_use notification: %s",
+                        reservation.id,
+                        e,
+                    )
+                    instances = []
                 if instances:
                     LOG.debug(
                         "Sending in_use notification for %s", reservation
