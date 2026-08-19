@@ -4,6 +4,7 @@ python-blazarclient
 python-novaclient
 keystoneauth1
 keystonemiddleware
+openstacksdk
 oslo.context
 oslo.config
 oslo.limit>=1.5.0
