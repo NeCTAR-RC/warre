@@ -14,6 +14,7 @@
 
 import flask_restful
 from flask_restful import reqparse
+from openstack import exceptions as sdk_exceptions
 from oslo_policy import policy
 
 from warre.api.v1.resources import base
@@ -43,9 +44,16 @@ class Limits(base.Resource):
         total_hours = quota.get_usage_by_project(project_id, "hours")
 
         enforcer = quota.get_enforcer()
-        limits = dict(
-            enforcer.get_project_limits(project_id, ["hours", "reservation"])
-        )
+        try:
+            limits = dict(
+                enforcer.get_project_limits(
+                    project_id, ["hours", "reservation"]
+                )
+            )
+        except sdk_exceptions.BadRequestException:
+            flask_restful.abort(
+                400, message=f"Invalid project_id: {project_id}"
+            )
 
         absolute = {
             "maxHours": limits.get("hours"),

@@ -13,6 +13,8 @@
 
 from unittest import mock
 
+from openstack import exceptions as sdk_exceptions
+
 from warre.tests.unit import base
 
 
@@ -50,3 +52,12 @@ class TestAdminLimitsAPI(TestLimitsAPI):
     def test_limits_list_project(self, mock_get_enforcer):
         response = self.client.get("/v1/limits/?project_id=123")
         self.assert200(response)
+
+    @mock.patch("warre.quota.get_enforcer")
+    def test_limits_list_project_invalid(self, mock_get_enforcer):
+        mock_enforcer = mock_get_enforcer.return_value
+        mock_enforcer.get_project_limits.side_effect = (
+            sdk_exceptions.BadRequestException()
+        )
+        response = self.client.get("/v1/limits/?project_id=foo_bar")
+        self.assert400(response)
