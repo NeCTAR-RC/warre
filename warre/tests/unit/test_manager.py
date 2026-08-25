@@ -14,6 +14,7 @@
 from datetime import datetime
 from unittest import mock
 
+from blazarclient import exception as blazar_exc
 from freezegun import freeze_time
 
 from warre.common import exceptions
@@ -312,6 +313,57 @@ class TestManager(base.TestCase):
             reservation = mgr.extend_reservation(
                 self.context, reservation, new_end
             )
+
+    @mock.patch("warre.common.blazar.BlazarClient")
+    def test_extend_reservation_blazar_conflict(self, mock_blazar):
+        blazar_client = mock_blazar.return_value
+        flavor = self.create_flavor()
+        reservation = self.create_reservation(
+            status=models.Reservation.ACTIVE,
+            flavor_id=flavor.id,
+            start=datetime(2021, 1, 1),
+            end=datetime(2021, 1, 2),
+        )
+        reservation.lease_id = "foobar"
+
+        new_end = datetime(2021, 1, 3)
+        mgr = manager.Manager()
+        blazar_client.update_lease.side_effect = (
+            blazar_exc.BlazarClientException(
+                "ERROR: Instance reservation doesn't allow to reduce/"
+                "replace reserved instance slots when the reservation "
+                "is in active status.",
+                code=409,
+            )
+        )
+        with self.assertRaisesRegex(
+            exceptions.InvalidReservation,
+            "Unable to extend: the underlying capacity is not available "
+            "for the requested period",
+        ):
+            mgr.extend_reservation(self.context, reservation, new_end)
+
+    @mock.patch("warre.common.blazar.BlazarClient")
+    def test_extend_reservation_blazar_client_error(self, mock_blazar):
+        blazar_client = mock_blazar.return_value
+        flavor = self.create_flavor()
+        reservation = self.create_reservation(
+            status=models.Reservation.ACTIVE,
+            flavor_id=flavor.id,
+            start=datetime(2021, 1, 1),
+            end=datetime(2021, 1, 2),
+        )
+        reservation.lease_id = "foobar"
+
+        new_end = datetime(2021, 1, 3)
+        mgr = manager.Manager()
+        blazar_client.update_lease.side_effect = (
+            blazar_exc.BlazarClientException("ERROR: boom", code=500)
+        )
+        with self.assertRaisesRegex(
+            exceptions.InvalidReservation, "Failed to extend lease"
+        ):
+            mgr.extend_reservation(self.context, reservation, new_end)
 
     def test_extend_reservation_no_lease(self):
         flavor = self.create_flavor()

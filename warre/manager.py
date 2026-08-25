@@ -15,6 +15,7 @@ import datetime
 from itertools import chain
 from operator import itemgetter
 
+from blazarclient import exception as blazar_exc
 from oslo_log import log as logging
 
 from warre.common import blazar
@@ -152,6 +153,22 @@ class Manager:
             self.blazar.update_lease(
                 reservation.lease_id, end_date=reservation.end
             )
+        except blazar_exc.BlazarClientException as e:
+            # Blazar returns a 409 when the hosts backing an active lease
+            # aren't available for the extended period, even if warre's
+            # flavor-level free slot check passes.
+            if e.kwargs.get("code") == 409:
+                LOG.warning(
+                    "Blazar refused to extend lease %s: %s",
+                    reservation.lease_id,
+                    e,
+                )
+                raise exceptions.InvalidReservation(
+                    "Unable to extend: the underlying capacity is not "
+                    "available for the requested period"
+                )
+            LOG.exception("Failed to extend lease %s", reservation.lease_id)
+            raise exceptions.InvalidReservation("Failed to extend lease")
         except Exception:
             LOG.exception("Failed to extend lease %s", reservation.lease_id)
             raise exceptions.InvalidReservation("Failed to extend lease")
