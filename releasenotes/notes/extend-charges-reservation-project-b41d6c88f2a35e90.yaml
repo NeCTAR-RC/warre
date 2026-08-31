@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Extending a reservation now charges the additional hours quota to
+    the project that owns the reservation. Previously an administrator
+    extending another project's reservation had the hours charged to
+    the administrator's own project.

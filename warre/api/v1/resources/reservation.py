@@ -196,10 +196,12 @@ class Reservation(base.Resource):
         )
 
         try:
+            # Charge the extension to the project owning the reservation,
+            # which may differ from the caller's project for admins.
             self.check_limit(
                 "hours",
                 prolong_hours * reservation.instance_count,
-                project_id=self.context.project_id or reservation.project_id,
+                project_id=reservation.project_id,
             )
         except limit_exceptions.ProjectOverLimit as e:
             return {"error_message": str(e)}, 413

@@ -380,6 +380,29 @@ class TestAdminReservationAPI(TestReservationAPI):
         results = response.get_json().get("results")
         self.assertEqual(2, len(results))
 
+    @mock.patch("warre.common.blazar.BlazarClient")
+    def test_extend_reservation_other_project_charges_owner(self, mock_blazar):
+        reservation = self.create_reservation(
+            status=models.Reservation.ACTIVE,
+            flavor_id=self.flavor.id,
+            start=datetime.datetime(2021, 1, 1, 0, 0),
+            end=datetime.datetime(2021, 1, 2, 23, 59),
+            project_id="123",
+        )
+        reservation.lease_id = "foo"
+
+        enforcer = quota.get_enforcer.return_value
+        enforcer.reset_mock()
+
+        data = {"end": "2021-01-03T23:59:00+00:00"}
+        response = self.client.patch(
+            f"/v1/reservations/{reservation.id}/", json=data
+        )
+        self.assert200(response)
+        # The extension hours are charged to the reservation's own
+        # project, not the admin's project.
+        enforcer.enforce.assert_called_once_with("123", {"hours": 24})
+
 
 @mock.patch("warre.quota.get_enforcer", new=mock.Mock())
 class TestSystemReaderReservationAPI(base.ApiTestCase):
