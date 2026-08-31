@@ -1,0 +1,29 @@
+---
+features:
+  - |
+    Warre now supports Keystone system-scoped tokens (secure RBAC).
+    All policy rules declare ``scope_types`` and scope enforcement is
+    enabled by default. A system-scoped token with the ``reader`` role
+    receives the same read access as the existing ``reader`` base rule,
+    including ``all_projects`` listings of reservations and flavors,
+    flavor projects, maintenance windows and per-project limits.
+upgrade:
+  - |
+    ``[oslo_policy] enforce_scope`` and ``enforce_new_defaults`` now
+    default to ``True`` and ``oslo.policy>=5.0.0`` is required.
+    Domain-scoped tokens are rejected by all APIs. Tokens without a
+    project (for example system-scoped tokens) can no longer create
+    reservations (HTTP 400), must supply ``project_id`` when querying
+    ``/v1/limits/`` (HTTP 400 otherwise), and receive an empty result
+    from ``GET /v1/reservations/`` unless ``all_projects=1`` or
+    ``project_id`` is passed and authorised. Operators can temporarily
+    set ``[oslo_policy] enforce_scope = False`` to restore the previous
+    behaviour; note that option is deprecated upstream for removal.
+security:
+  - |
+    Fixed an issue where a token without a project could list
+    reservations from all projects via ``GET /v1/reservations/``
+    without passing the ``warre:reservation:list:all`` policy check.
+  - |
+    Fixed an issue where a token without a project could see private
+    flavors with no project grants in ``GET /v1/flavors/``.

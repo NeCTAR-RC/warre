@@ -61,3 +61,35 @@ class TestAdminLimitsAPI(TestLimitsAPI):
         )
         response = self.client.get("/v1/limits/?project_id=foo_bar")
         self.assert400(response)
+
+
+class TestSystemReaderLimitsAPI(base.ApiTestCase):
+    ROLES = ["reader"]
+    SYSTEM_SCOPE = "all"
+
+    @mock.patch("warre.quota.get_enforcer")
+    def test_limits_list_project(self, mock_get_enforcer):
+        mock_enforcer = mock_get_enforcer.return_value
+        mock_enforcer.get_project_limits.return_value = [
+            ("hours", 1),
+            ("reservation", 2),
+        ]
+        response = self.client.get("/v1/limits/?project_id=123")
+        self.assert200(response)
+
+    def test_limits_list_no_project(self):
+        response = self.client.get("/v1/limits/")
+        self.assert400(response)
+
+
+class TestSystemMemberLimitsAPI(base.ApiTestCase):
+    ROLES = ["member"]
+    SYSTEM_SCOPE = "all"
+
+    def test_limits_list_project(self):
+        response = self.client.get("/v1/limits/?project_id=123")
+        self.assert403(response)
+
+    def test_limits_list_no_project(self):
+        response = self.client.get("/v1/limits/")
+        self.assert400(response)

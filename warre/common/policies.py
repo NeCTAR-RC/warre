@@ -20,14 +20,22 @@ ADMIN_OR_READER = "admin_or_reader"
 ADMIN_OR_WRITER = "admin_or_writer"
 ADMIN_OR_OWNER = "admin_or_owner"
 
+SCOPE_SYSTEM_PROJECT = ["system", "project"]
+SCOPE_PROJECT = ["project"]
+
 
 base_rules = [
     policy.RuleDefault(
         name="admin_required", check_str="role:admin or is_admin:1"
     ),
     policy.RuleDefault(
+        name="system_reader",
+        check_str="role:reader and system_scope:all",
+    ),
+    policy.RuleDefault(
         name="reader",
-        check_str="role:read_only or role:cloud_admin or role:helpdesk",
+        check_str="role:read_only or role:cloud_admin or role:helpdesk"
+        " or rule:system_reader",
     ),
     policy.RuleDefault(
         name="writer", check_str="role:cloud_admin or role:helpdesk"
@@ -58,6 +66,7 @@ flavor_rules = [
     policy.DocumentedRuleDefault(
         name=FLAVOR_PREFIX % "get",
         check_str="",
+        scope_types=SCOPE_SYSTEM_PROJECT,
         description="Show flavor details.",
         operations=[
             {"path": "/v1/flavors/{flavor_id}/", "method": "GET"},
@@ -67,6 +76,7 @@ flavor_rules = [
     policy.DocumentedRuleDefault(
         name=FLAVOR_PREFIX % "list",
         check_str="",
+        scope_types=SCOPE_SYSTEM_PROJECT,
         description="List flavors.",
         operations=[
             {"path": "/v1/flavors/", "method": "GET"},
@@ -76,24 +86,28 @@ flavor_rules = [
     policy.DocumentedRuleDefault(
         name=FLAVOR_PREFIX % "create",
         check_str=f"rule:{ADMIN_OR_WRITER}",
+        scope_types=SCOPE_SYSTEM_PROJECT,
         description="Create flavor.",
         operations=[{"path": "/v1/flavors/", "method": "POST"}],
     ),
     policy.DocumentedRuleDefault(
         name=FLAVOR_PREFIX % "list:all",
         check_str=f"rule:{ADMIN_OR_READER}",
+        scope_types=SCOPE_SYSTEM_PROJECT,
         description="List all flavors.",
         operations=[{"path": "/v1/flavors/", "method": "GET"}],
     ),
     policy.DocumentedRuleDefault(
         name=FLAVOR_PREFIX % "update",
         check_str=f"rule:{ADMIN_OR_WRITER}",
+        scope_types=SCOPE_SYSTEM_PROJECT,
         description="Update a flavor",
         operations=[{"path": "/v1/flavors/{flavor_id}/", "method": "PATCH"}],
     ),
     policy.DocumentedRuleDefault(
         name=FLAVOR_PREFIX % "delete",
         check_str=f"rule:{ADMIN_OR_WRITER}",
+        scope_types=SCOPE_SYSTEM_PROJECT,
         description="Delete flavor.",
         operations=[{"path": "/v1/flavors/{flavor_id}/", "method": "DELETE"}],
     ),
@@ -105,6 +119,7 @@ flavorproject_rules = [
     policy.DocumentedRuleDefault(
         name=FLAVORPROJECT_PREFIX % "get",
         check_str=f"rule:{ADMIN_OR_READER}",
+        scope_types=SCOPE_SYSTEM_PROJECT,
         description="Show flavorproject details.",
         operations=[
             {"path": "/v1/flavorprojects/{flavor_id}/", "method": "GET"},
@@ -114,6 +129,7 @@ flavorproject_rules = [
     policy.DocumentedRuleDefault(
         name=FLAVORPROJECT_PREFIX % "list",
         check_str=f"rule:{ADMIN_OR_READER}",
+        scope_types=SCOPE_SYSTEM_PROJECT,
         description="List flavorprojects.",
         operations=[
             {"path": "/v1/flavorprojects/", "method": "GET"},
@@ -123,12 +139,14 @@ flavorproject_rules = [
     policy.DocumentedRuleDefault(
         name=FLAVORPROJECT_PREFIX % "create",
         check_str=f"rule:{ADMIN_OR_WRITER}",
+        scope_types=SCOPE_SYSTEM_PROJECT,
         description="Create flavorproject.",
         operations=[{"path": "/v1/flavorprojects/", "method": "POST"}],
     ),
     policy.DocumentedRuleDefault(
         name=FLAVORPROJECT_PREFIX % "delete",
         check_str=f"rule:{ADMIN_OR_WRITER}",
+        scope_types=SCOPE_SYSTEM_PROJECT,
         description="Delete flavorproject.",
         operations=[
             {"path": "/v1/flavorprojects/{flavor_id}/", "method": "DELETE"}
@@ -142,6 +160,7 @@ maintenancewindow_rules = [
     policy.DocumentedRuleDefault(
         name=MAINTENANCEWINDOW_PREFIX % "get",
         check_str="",
+        scope_types=SCOPE_SYSTEM_PROJECT,
         description="Show maintenance window details.",
         operations=[
             {"path": "/v1/maintenancewindows/{id}/", "method": "GET"},
@@ -151,6 +170,7 @@ maintenancewindow_rules = [
     policy.DocumentedRuleDefault(
         name=MAINTENANCEWINDOW_PREFIX % "list",
         check_str="",
+        scope_types=SCOPE_SYSTEM_PROJECT,
         description="List maintenance windows.",
         operations=[
             {"path": "/v1/maintenancewindows/", "method": "GET"},
@@ -160,12 +180,14 @@ maintenancewindow_rules = [
     policy.DocumentedRuleDefault(
         name=MAINTENANCEWINDOW_PREFIX % "create",
         check_str=f"rule:{ADMIN_OR_WRITER}",
+        scope_types=SCOPE_SYSTEM_PROJECT,
         description="Create a maintenance window.",
         operations=[{"path": "/v1/maintenancewindows/", "method": "POST"}],
     ),
     policy.DocumentedRuleDefault(
         name=MAINTENANCEWINDOW_PREFIX % "update",
         check_str=f"rule:{ADMIN_OR_WRITER}",
+        scope_types=SCOPE_SYSTEM_PROJECT,
         description="Update a maintenance window.",
         operations=[
             {
@@ -177,6 +199,7 @@ maintenancewindow_rules = [
     policy.DocumentedRuleDefault(
         name=MAINTENANCEWINDOW_PREFIX % "delete",
         check_str=f"rule:{ADMIN_OR_WRITER}",
+        scope_types=SCOPE_SYSTEM_PROJECT,
         description="Delete a maintenance window.",
         operations=[
             {
@@ -191,6 +214,7 @@ limits_rules = [
     policy.DocumentedRuleDefault(
         name="warre:limits:list:all",
         check_str=f"rule:{ADMIN_OR_READER}",
+        scope_types=SCOPE_SYSTEM_PROJECT,
         description="List limits for any project",
         operations=[{"path": "/v1/limits/", "method": "GET"}],
     ),
@@ -202,6 +226,7 @@ reservation_rules = [
     policy.DocumentedRuleDefault(
         name=RESERVATION_PREFIX % "get",
         check_str=f"rule:{ADMIN_OR_OWNER_OR_READER}",
+        scope_types=SCOPE_SYSTEM_PROJECT,
         description="Show reservation details.",
         operations=[
             {"path": "/v1/reservations/{reservation_id}/", "method": "GET"},
@@ -211,6 +236,7 @@ reservation_rules = [
     policy.DocumentedRuleDefault(
         name=RESERVATION_PREFIX % "list",
         check_str="",
+        scope_types=SCOPE_SYSTEM_PROJECT,
         description="List reservations.",
         operations=[
             {"path": "/v1/reservations/", "method": "GET"},
@@ -220,12 +246,14 @@ reservation_rules = [
     policy.DocumentedRuleDefault(
         name=RESERVATION_PREFIX % "list:all",
         check_str=f"rule:{ADMIN_OR_READER}",
+        scope_types=SCOPE_SYSTEM_PROJECT,
         description="List all reservations.",
         operations=[{"path": "/v1/reservations/", "method": "GET"}],
     ),
     policy.DocumentedRuleDefault(
         name=RESERVATION_PREFIX % "create:bypass_maintenance",
         check_str="rule:admin_required",
+        scope_types=SCOPE_PROJECT,
         description="Create a reservation that overlaps a maintenance "
         "window (intended for admin testing during maintenance).",
         operations=[{"path": "/v1/reservations/", "method": "POST"}],
@@ -233,6 +261,7 @@ reservation_rules = [
     policy.DocumentedRuleDefault(
         name=RESERVATION_PREFIX % "update",
         check_str=f"rule:{ADMIN_OR_OWNER}",
+        scope_types=SCOPE_SYSTEM_PROJECT,
         description="Update a reservation",
         operations=[
             {"path": "/v1/reservations/{reservation_id}/", "method": "PATCH"}
@@ -241,6 +270,7 @@ reservation_rules = [
     policy.DocumentedRuleDefault(
         name=RESERVATION_PREFIX % "delete",
         check_str=f"rule:{ADMIN_OR_OWNER}",
+        scope_types=SCOPE_SYSTEM_PROJECT,
         description="Delete reservation.",
         operations=[
             {"path": "/v1/reservations/{reservation_id}/", "method": "DELETE"}

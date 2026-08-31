@@ -402,6 +402,57 @@ class TestMaintenanceWindowAPIMember(base.ApiTestCase):
 
 
 @mock.patch("warre.quota.get_enforcer", new=mock.Mock())
+class TestSystemReaderMaintenanceWindowAPI(base.ApiTestCase):
+    ROLES = ["reader"]
+    SYSTEM_SCOPE = "all"
+
+    def test_list(self):
+        self.create_maintenance_window(
+            start=datetime(2026, 5, 1),
+            end=datetime(2026, 5, 2),
+        )
+        response = self.client.get("/v1/maintenancewindows/")
+        self.assert200(response)
+        results = response.get_json().get("results")
+        self.assertEqual(1, len(results))
+
+    def test_get(self):
+        window = self.create_maintenance_window(
+            start=datetime(2026, 5, 1),
+            end=datetime(2026, 5, 2),
+        )
+        response = self.client.get(f"/v1/maintenancewindows/{window.id}/")
+        self.assert200(response)
+
+    def test_create_forbidden(self):
+        data = {
+            "start": "2026-05-01T00:00:00+00:00",
+            "end": "2026-05-02T00:00:00+00:00",
+        }
+        response = self.client.post("/v1/maintenancewindows/", json=data)
+        self.assertStatus(response, 403)
+
+    def test_update_not_found(self):
+        window = self.create_maintenance_window(
+            start=datetime(2026, 5, 1),
+            end=datetime(2026, 5, 2),
+        )
+        response = self.client.patch(
+            f"/v1/maintenancewindows/{window.id}/",
+            json={"note": "x"},
+        )
+        self.assertStatus(response, 404)
+
+    def test_delete_not_found(self):
+        window = self.create_maintenance_window(
+            start=datetime(2026, 5, 1),
+            end=datetime(2026, 5, 2),
+        )
+        response = self.client.delete(f"/v1/maintenancewindows/{window.id}/")
+        self.assertStatus(response, 404)
+
+
+@mock.patch("warre.quota.get_enforcer", new=mock.Mock())
 class TestMaintenanceWindowFreeSlots(base.ApiTestCase):
     ROLES = ["admin"]
 

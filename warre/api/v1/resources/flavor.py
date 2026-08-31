@@ -42,13 +42,22 @@ class FlavorList(base.Resource):
         return db.session.query(models.Flavor)
 
     def _get_flavors(self):
+        if self.context.project_id:
+            # NOTE: with a NULL project_id the comparison below becomes
+            # IS NULL, which unmatched outer-join rows satisfy, leaking
+            # private flavors that have no project grants at all.
+            is_member = (
+                models.FlavorProject.project_id == self.context.project_id
+            )
+        else:
+            is_member = db.false()
         return (
             db.session.query(models.Flavor)
             .join(models.FlavorProject, isouter=True)
             .filter(models.Flavor.active == True)
             .filter(
                 db.or_(  # noqa
-                    models.FlavorProject.project_id == self.context.project_id,
+                    is_member,
                     models.Flavor.is_public == True,
                 )
             )

@@ -14,6 +14,7 @@
 import flask
 from flask import request
 import flask_restful
+from oslo_policy import policy as oslo_policy
 
 from warre.common import keystone
 from warre import manager
@@ -30,13 +31,22 @@ class Resource(flask_restful.Resource):
     def authorize(self, rule, target={}, do_raise=True):
         rule = self.POLICY_PREFIX % rule
         enforcer = policy.get_enforcer()
-        return enforcer.authorize(
-            rule, target, self.context, do_raise=do_raise
-        )
+        try:
+            return enforcer.authorize(
+                rule, target, self.context, do_raise=do_raise
+            )
+        except oslo_policy.InvalidScope as exc:
+            # Present scope failures as a normal authorization failure
+            # so callers only need to handle PolicyNotAuthorized.
+            raise oslo_policy.PolicyNotAuthorized(
+                rule, target, self.context.to_policy_values()
+            ) from exc
 
-    def check_limit(self, resource, delta=1):
+    def check_limit(self, resource, delta=1, project_id=None):
         enforcer = quota.get_enforcer()
-        enforcer.enforce(self.context.project_id, {resource: delta})
+        enforcer.enforce(
+            project_id or self.context.project_id, {resource: delta}
+        )
 
     @property
     def context(self):

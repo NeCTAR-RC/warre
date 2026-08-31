@@ -379,3 +379,271 @@ class TestAdminReservationAPI(TestReservationAPI):
         self.assert200(response)
         results = response.get_json().get("results")
         self.assertEqual(2, len(results))
+
+
+@mock.patch("warre.quota.get_enforcer", new=mock.Mock())
+class TestSystemReaderReservationAPI(base.ApiTestCase):
+    ROLES = ["reader"]
+    SYSTEM_SCOPE = "all"
+
+    def setUp(self):
+        super().setUp()
+        self.flavor = self.create_flavor()
+
+    def _create_two_reservations(self):
+        self.create_reservation(
+            flavor_id=self.flavor.id,
+            start=datetime.datetime(2021, 1, 1),
+            end=datetime.datetime(2021, 1, 2),
+            project_id="123",
+        )
+        self.create_reservation(
+            flavor_id=self.flavor.id,
+            start=datetime.datetime(2021, 1, 1),
+            end=datetime.datetime(2021, 1, 2),
+            project_id="987",
+        )
+
+    def test_list_reservations_default_empty(self):
+        self._create_two_reservations()
+        response = self.client.get("/v1/reservations/")
+
+        self.assert200(response)
+        results = response.get_json().get("results")
+        self.assertEqual(0, len(results))
+
+    def test_list_reservations_all_projects(self):
+        self._create_two_reservations()
+        response = self.client.get("/v1/reservations/?all_projects=1")
+
+        self.assert200(response)
+        results = response.get_json().get("results")
+        self.assertEqual(2, len(results))
+
+    def test_list_reservations_project_filter(self):
+        self._create_two_reservations()
+        response = self.client.get("/v1/reservations/?project_id=123")
+
+        self.assert200(response)
+        results = response.get_json().get("results")
+        self.assertEqual(1, len(results))
+        self.assertEqual("123", results[0].get("project_id"))
+
+    def test_get_reservation_other_project(self):
+        reservation = self.create_reservation(
+            flavor_id=self.flavor.id,
+            start=datetime.datetime(2021, 1, 1),
+            end=datetime.datetime(2021, 1, 2),
+            project_id="123",
+        )
+        response = self.client.get(f"/v1/reservations/{reservation.id}/")
+        self.assert200(response)
+        self.assertEqual(reservation.id, response.get_json().get("id"))
+
+    def test_create_reservation_rejected(self):
+        data = {
+            "flavor_id": self.flavor.id,
+            "start": "2020-01-01T00:00:00+00:00",
+            "end": "2020-01-01T01:00:00+00:00",
+        }
+        response = self.client.post("/v1/reservations/", json=data)
+        self.assert400(response)
+        self.assertIn(
+            "project-scoped token",
+            response.get_json().get("error_message"),
+        )
+
+    def test_extend_reservation_not_found(self):
+        reservation = self.create_reservation(
+            status=models.Reservation.ACTIVE,
+            flavor_id=self.flavor.id,
+            start=datetime.datetime(2021, 1, 1),
+            end=datetime.datetime(2021, 1, 2),
+            project_id="123",
+        )
+        data = {"end": "2021-01-03T23:59:00+00:00"}
+        response = self.client.patch(
+            f"/v1/reservations/{reservation.id}/", json=data
+        )
+        self.assert404(response)
+
+    def test_delete_reservation_not_found(self):
+        reservation = self.create_reservation(
+            flavor_id=self.flavor.id,
+            start=datetime.datetime(2021, 1, 1),
+            end=datetime.datetime(2021, 1, 2),
+            project_id="123",
+        )
+        response = self.client.delete(f"/v1/reservations/{reservation.id}/")
+        self.assert404(response)
+
+
+@mock.patch("warre.quota.get_enforcer", new=mock.Mock())
+class TestSystemMemberReservationAPI(base.ApiTestCase):
+    ROLES = ["member"]
+    SYSTEM_SCOPE = "all"
+
+    def setUp(self):
+        super().setUp()
+        self.flavor = self.create_flavor()
+
+    def test_list_reservations_empty(self):
+        # A token without a project and without the list:all policy
+        # must never see other projects' reservations.
+        self.create_reservation(
+            flavor_id=self.flavor.id,
+            start=datetime.datetime(2021, 1, 1),
+            end=datetime.datetime(2021, 1, 2),
+            project_id="123",
+        )
+        response = self.client.get("/v1/reservations/")
+
+        self.assert200(response)
+        results = response.get_json().get("results")
+        self.assertEqual(0, len(results))
+
+    def test_list_reservations_all_projects_ignored(self):
+        self.create_reservation(
+            flavor_id=self.flavor.id,
+            start=datetime.datetime(2021, 1, 1),
+            end=datetime.datetime(2021, 1, 2),
+            project_id="123",
+        )
+        response = self.client.get("/v1/reservations/?all_projects=1")
+
+        self.assert200(response)
+        results = response.get_json().get("results")
+        self.assertEqual(0, len(results))
+
+    def test_get_reservation_not_found(self):
+        reservation = self.create_reservation(
+            flavor_id=self.flavor.id,
+            start=datetime.datetime(2021, 1, 1),
+            end=datetime.datetime(2021, 1, 2),
+            project_id="123",
+        )
+        response = self.client.get(f"/v1/reservations/{reservation.id}/")
+        self.assert404(response)
+
+    def test_create_reservation_rejected(self):
+        data = {
+            "flavor_id": self.flavor.id,
+            "start": "2020-01-01T00:00:00+00:00",
+            "end": "2020-01-01T01:00:00+00:00",
+        }
+        response = self.client.post("/v1/reservations/", json=data)
+        self.assert400(response)
+
+
+@mock.patch("warre.quota.get_enforcer", new=mock.Mock())
+class TestSystemAdminReservationAPI(base.ApiTestCase):
+    ROLES = ["admin"]
+    SYSTEM_SCOPE = "all"
+
+    def setUp(self):
+        super().setUp()
+        self.flavor = self.create_flavor()
+
+    def test_list_reservations_default_empty(self):
+        self.create_reservation(
+            flavor_id=self.flavor.id,
+            start=datetime.datetime(2021, 1, 1),
+            end=datetime.datetime(2021, 1, 2),
+            project_id="123",
+        )
+        response = self.client.get("/v1/reservations/")
+
+        self.assert200(response)
+        results = response.get_json().get("results")
+        self.assertEqual(0, len(results))
+
+    def test_list_reservations_all_projects(self):
+        self.create_reservation(
+            flavor_id=self.flavor.id,
+            start=datetime.datetime(2021, 1, 1),
+            end=datetime.datetime(2021, 1, 2),
+            project_id="123",
+        )
+        self.create_reservation(
+            flavor_id=self.flavor.id,
+            start=datetime.datetime(2021, 1, 1),
+            end=datetime.datetime(2021, 1, 2),
+            project_id="987",
+        )
+        response = self.client.get("/v1/reservations/?all_projects=1")
+
+        self.assert200(response)
+        results = response.get_json().get("results")
+        self.assertEqual(2, len(results))
+
+    @mock.patch("warre.common.blazar.BlazarClient")
+    def test_delete_reservation_other_project(self, mock_blazar):
+        reservation = self.create_reservation(
+            flavor_id=self.flavor.id,
+            start=datetime.datetime(2021, 1, 1),
+            end=datetime.datetime(2021, 1, 2),
+            project_id="123",
+        )
+        reservation.lease_id = "foo"
+
+        response = self.client.delete(f"/v1/reservations/{reservation.id}/")
+        self.assertStatus(response, 204)
+        mock_blazar.return_value.delete_lease.assert_called_once_with("foo")
+
+    @mock.patch("warre.common.blazar.BlazarClient")
+    def test_extend_reservation_other_project(self, mock_blazar):
+        reservation = self.create_reservation(
+            status=models.Reservation.ACTIVE,
+            flavor_id=self.flavor.id,
+            start=datetime.datetime(2021, 1, 1, 0, 0),
+            end=datetime.datetime(2021, 1, 2, 23, 59),
+            project_id="123",
+        )
+        reservation.lease_id = "foo"
+
+        enforcer = quota.get_enforcer.return_value
+        enforcer.reset_mock()
+
+        data = {"end": "2021-01-03T23:59:00+00:00"}
+        response = self.client.patch(
+            f"/v1/reservations/{reservation.id}/", json=data
+        )
+        self.assert200(response)
+        self.assertEqual(
+            "2021-01-03T23:59:00+00:00", response.get_json().get("end")
+        )
+        # The extension hours are charged to the reservation's own
+        # project since the caller's token has no project.
+        enforcer.enforce.assert_called_once_with("123", {"hours": 24})
+
+    def test_create_reservation_rejected(self):
+        data = {
+            "flavor_id": self.flavor.id,
+            "start": "2020-01-01T00:00:00+00:00",
+            "end": "2020-01-01T01:00:00+00:00",
+        }
+        response = self.client.post("/v1/reservations/", json=data)
+        self.assert400(response)
+
+
+@mock.patch("warre.quota.get_enforcer", new=mock.Mock())
+class TestDomainScopedReservationAPI(base.ApiTestCase):
+    ROLES = ["admin"]
+    DOMAIN_ID = "domain1"
+
+    def setUp(self):
+        super().setUp()
+        self.flavor = self.create_flavor()
+
+    def test_list_reservations_forbidden(self):
+        response = self.client.get("/v1/reservations/")
+        self.assert403(response)
+
+    def test_get_reservation_not_found(self):
+        reservation = self.create_reservation(
+            flavor_id=self.flavor.id,
+            start=datetime.datetime(2021, 1, 1),
+            end=datetime.datetime(2021, 1, 2),
+        )
+        response = self.client.get(f"/v1/reservations/{reservation.id}/")
+        self.assert404(response)

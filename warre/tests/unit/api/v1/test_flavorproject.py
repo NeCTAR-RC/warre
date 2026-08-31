@@ -114,3 +114,40 @@ class TestFlavorProjectAPI(base.ApiTestCase):
 
         response = self.client.delete(f"/v1/flavorprojects/{fp.id}/")
         self.assertStatus(response, 204)
+
+
+@mock.patch("warre.quota.get_enforcer", new=mock.Mock())
+class TestSystemReaderFlavorProjectAPI(base.ApiTestCase):
+    ROLES = ["reader"]
+    SYSTEM_SCOPE = "all"
+
+    def setUp(self):
+        super().setUp()
+        self.flavor = self.create_flavor()
+
+    def test_list_flavorprojects(self):
+        fp = models.FlavorProject(
+            project_id="fp-project-id", flavor_id=self.flavor.id
+        )
+        db.session.add(fp)
+        db.session.commit()
+        response = self.client.get("/v1/flavorprojects/")
+
+        self.assert200(response)
+        results = response.get_json().get("results")
+        self.assertEqual(1, len(results))
+
+    def test_create_flavorproject_forbidden(self):
+        data = {"flavor_id": self.flavor.id, "project_id": "xyz"}
+        response = self.client.post("/v1/flavorprojects/", json=data)
+        self.assert403(response)
+
+    def test_delete_flavorproject_not_found(self):
+        fp = models.FlavorProject(
+            project_id="fp-project-id", flavor_id=self.flavor.id
+        )
+        db.session.add(fp)
+        db.session.commit()
+
+        response = self.client.delete(f"/v1/flavorprojects/{fp.id}/")
+        self.assert404(response)

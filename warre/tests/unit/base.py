@@ -100,13 +100,20 @@ class TestCase(flask_testing.TestCase):
 
 
 class TestKeystoneWrapper:
-    def __init__(self, app, roles):
+    def __init__(self, app, roles, system_scope=None, domain_id=None):
         self.app = app
         self.roles = roles
+        self.system_scope = system_scope
+        self.domain_id = domain_id
+        self.project_id = None if (system_scope or domain_id) else PROJECT_ID
 
     def __call__(self, environ, start_response):
         cntx = context.RequestContext(
-            roles=self.roles, project_id=PROJECT_ID, user_id=USER_ID
+            roles=self.roles,
+            project_id=self.project_id,
+            user_id=USER_ID,
+            system_scope=self.system_scope,
+            domain_id=self.domain_id,
         )
         environ[keystone.REQUEST_CONTEXT_ENV] = cntx
 
@@ -115,10 +122,17 @@ class TestKeystoneWrapper:
 
 class ApiTestCase(TestCase):
     ROLES = ["member"]
+    SYSTEM_SCOPE = None
+    DOMAIN_ID = None
 
     def setUp(self):
         super().setUp()
         self.init_context()
 
     def init_context(self):
-        self.app.wsgi_app = TestKeystoneWrapper(self.app.wsgi_app, self.ROLES)
+        self.app.wsgi_app = TestKeystoneWrapper(
+            self.app.wsgi_app,
+            self.ROLES,
+            system_scope=self.SYSTEM_SCOPE,
+            domain_id=self.DOMAIN_ID,
+        )

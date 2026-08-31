@@ -35,8 +35,13 @@ class Limits(base.Resource):
             except policy.PolicyNotAuthorized:
                 flask_restful.abort(403, message="Not authorised")
             project_id = args.get("project_id")
-        else:
+        elif self.context.project_id:
             project_id = self.context.project_id
+        else:
+            flask_restful.abort(
+                400,
+                message="project_id is required for tokens without a project",
+            )
 
         total_reservations = quota.get_usage_by_project(
             project_id, "reservation"

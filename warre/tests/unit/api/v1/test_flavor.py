@@ -223,3 +223,73 @@ class TestAdminFlavorAPI(TestFlavorAPI):
         )
         response = self.client.delete(f"/v1/flavors/{flavor.id}/")
         self.assertStatus(response, 409)
+
+
+class TestSystemReaderFlavorAPI(base.ApiTestCase):
+    ROLES = ["reader"]
+    SYSTEM_SCOPE = "all"
+
+    def test_flavor_list_public_only(self):
+        self.create_flavor(is_public=True)
+        self.create_flavor(is_public=False)
+        response = self.client.get("/v1/flavors/")
+
+        self.assert200(response)
+        results = response.get_json().get("results")
+        self.assertEqual(1, len(results))
+
+    def test_flavor_list_all_projects(self):
+        self.create_flavor(is_public=True)
+        self.create_flavor(is_public=False)
+        response = self.client.get("/v1/flavors/?all_projects=1")
+
+        self.assert200(response)
+        results = response.get_json().get("results")
+        self.assertEqual(2, len(results))
+
+    def test_flavor_get_private(self):
+        flavor = self.create_flavor(is_public=False)
+        response = self.client.get(f"/v1/flavors/{flavor.id}/")
+        self.assert200(response)
+
+    def test_flavor_create_forbidden(self):
+        data = {
+            "name": "test.create",
+            "vcpu": 1,
+            "memory_mb": 10,
+            "disk_gb": 20,
+            "max_length_hours": 1,
+            "slots": 1,
+        }
+        response = self.client.post("/v1/flavors/", json=data)
+        self.assert403(response)
+
+    def test_flavor_update_not_found(self):
+        flavor = self.create_flavor(slots=20)
+        data = {"slots": 50}
+        response = self.client.patch(f"/v1/flavors/{flavor.id}/", json=data)
+        self.assert404(response)
+
+    def test_flavor_delete_not_found(self):
+        flavor = self.create_flavor()
+        response = self.client.delete(f"/v1/flavors/{flavor.id}/")
+        self.assert404(response)
+
+
+class TestSystemMemberFlavorAPI(base.ApiTestCase):
+    ROLES = ["member"]
+    SYSTEM_SCOPE = "all"
+
+    def test_flavor_get_private_not_found(self):
+        flavor = self.create_flavor(is_public=False)
+        response = self.client.get(f"/v1/flavors/{flavor.id}/")
+        self.assert404(response)
+
+    def test_flavor_list_all_projects_ignored(self):
+        self.create_flavor(is_public=True)
+        self.create_flavor(is_public=False)
+        response = self.client.get("/v1/flavors/?all_projects=1")
+
+        self.assert200(response)
+        results = response.get_json().get("results")
+        self.assertEqual(1, len(results))

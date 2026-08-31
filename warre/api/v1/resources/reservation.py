@@ -58,11 +58,16 @@ class ReservationList(base.Resource):
         parser.add_argument("project_id", type=str, location="args")
         parser.add_argument("flavor_id", type=str, location="args")
         args = parser.parse_args()
-        query = self._get_reservations(self.context.project_id)
-        if self.authorize("list:all", do_raise=False):
-            project_id = args.get("project_id")
-            if args.get("all_projects") or project_id:
-                query = self._get_reservations(project_id)
+        if self.authorize("list:all", do_raise=False) and (
+            args.get("all_projects") or args.get("project_id")
+        ):
+            query = self._get_reservations(args.get("project_id"))
+        elif self.context.project_id:
+            query = self._get_reservations(self.context.project_id)
+        else:
+            # Tokens without a project (e.g. system-scoped) that are not
+            # authorised for an all-projects listing see nothing.
+            query = self._get_reservations().filter(db.false())
 
         if args.get("flavor_id"):
             query = query.filter_by(flavor_id=args.get("flavor_id"))
@@ -73,6 +78,12 @@ class ReservationList(base.Resource):
         data = request.get_json()
         if not data:
             return {"error_message": "No input data provided"}, 400
+
+        if not self.context.project_id:
+            return {
+                "error_message": "Reservations must be created with a "
+                "project-scoped token"
+            }, 400
 
         try:
             self.check_limit("reservation")
@@ -186,7 +197,9 @@ class Reservation(base.Resource):
 
         try:
             self.check_limit(
-                "hours", prolong_hours * reservation.instance_count
+                "hours",
+                prolong_hours * reservation.instance_count,
+                project_id=self.context.project_id or reservation.project_id,
             )
         except limit_exceptions.ProjectOverLimit as e:
             return {"error_message": str(e)}, 413
