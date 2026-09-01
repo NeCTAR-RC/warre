@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import multiprocessing
 import sys
 
 import cotyledon
@@ -29,7 +30,12 @@ CONF = cfg.CONF
 def main():
     service.prepare_service(sys.argv)
 
-    sm = cotyledon.ServiceManager()
+    # Force 'fork' rather than the platform default (which is 'forkserver' on
+    # Python >= 3.14 on Linux). forkserver pickles the ServiceManager args,
+    # and oslo.config's ConfigOpts isn't picklable before oslo.config 10.6.
+    sm = cotyledon.ServiceManager(
+        mp_context=multiprocessing.get_context("fork")
+    )
 
     m = manager.Manager()
     sm.add(
