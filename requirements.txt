@@ -25,3 +25,4 @@ python-memcached
 jinja2
 sentry-sdk
 taynacclient>=1.2.0
+nectar-health-probe>=1.0.2
