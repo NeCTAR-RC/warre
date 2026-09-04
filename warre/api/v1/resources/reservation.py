@@ -86,6 +86,11 @@ class ReservationList(base.Resource):
             }, 400
 
         try:
+            self.authorize("create")
+        except policy.PolicyNotAuthorized:
+            flask_restful.abort(403, message="Not authorised")
+
+        try:
             self.check_limit("reservation")
         except limit_exceptions.ProjectOverLimit as e:
             return {"error_message": str(e)}, 413

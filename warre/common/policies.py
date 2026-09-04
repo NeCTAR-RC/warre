@@ -251,6 +251,13 @@ reservation_rules = [
         operations=[{"path": "/v1/reservations/", "method": "GET"}],
     ),
     policy.DocumentedRuleDefault(
+        name=RESERVATION_PREFIX % "create",
+        check_str="role:member",
+        scope_types=SCOPE_PROJECT,
+        description="Create a reservation.",
+        operations=[{"path": "/v1/reservations/", "method": "POST"}],
+    ),
+    policy.DocumentedRuleDefault(
         name=RESERVATION_PREFIX % "create:bypass_maintenance",
         check_str="rule:admin_required",
         scope_types=SCOPE_PROJECT,

@@ -1,0 +1,10 @@
+---
+security:
+  - |
+    Added a ``warre:reservation:create`` policy rule, checked when
+    creating a reservation via ``POST /v1/reservations/``. Previously
+    any authenticated role could create a reservation; the rule now
+    requires the ``member`` role and a project-scoped token
+    (``scope_types`` is restricted to ``project``). Operators who grant
+    reservation creation to a different role must override this rule
+    in their policy configuration.

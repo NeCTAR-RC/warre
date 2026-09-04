@@ -325,7 +325,9 @@ class TestReservationAPI(base.ApiTestCase):
 
 @mock.patch("warre.quota.get_enforcer", new=mock.Mock())
 class TestAdminReservationAPI(TestReservationAPI):
-    ROLES = ["admin"]
+    # Keystone grants "member" (and "reader") as implied roles for "admin"
+    # by default, so a real admin token also carries "member".
+    ROLES = ["admin", "member"]
 
     def test_create_reservation_during_maintenance_window_denied(self):
         # Admins are allowed to bypass the maintenance window check.
@@ -402,6 +404,26 @@ class TestAdminReservationAPI(TestReservationAPI):
         # The extension hours are charged to the reservation's own
         # project, not the admin's project.
         enforcer.enforce.assert_called_once_with("123", {"hours": 24})
+
+
+@mock.patch("warre.quota.get_enforcer", new=mock.Mock())
+class TestReaderReservationAPI(base.ApiTestCase):
+    ROLES = ["reader"]
+
+    def setUp(self):
+        super().setUp()
+        self.flavor = self.create_flavor()
+
+    def test_create_reservation_rejected(self):
+        # A project-scoped token without the member role cannot create
+        # reservations.
+        data = {
+            "flavor_id": self.flavor.id,
+            "start": "2020-01-01T00:00:00+00:00",
+            "end": "2020-01-01T01:00:00+00:00",
+        }
+        response = self.client.post("/v1/reservations/", json=data)
+        self.assert403(response)
 
 
 @mock.patch("warre.quota.get_enforcer", new=mock.Mock())
