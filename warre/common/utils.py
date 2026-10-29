@@ -17,12 +17,13 @@ import datetime
 def normalise_time(timestamp):
     """Normalize time in arbitrary timezone to UTC naive object.
 
-    Also remove the seconds
+    Also truncate to the whole minute by removing the seconds and
+    microseconds.
     """
 
     if timestamp is None:
         return timestamp
-    timestamp = timestamp.replace(second=0)
+    timestamp = timestamp.replace(second=0, microsecond=0)
     offset = timestamp.utcoffset()
     if offset is None:
         return timestamp

@@ -19,6 +19,27 @@ from warre.common import utils
 from warre.tests.unit import base
 
 
+class TestNormaliseTime(base.TestCase):
+    def test_none(self):
+        self.assertIsNone(utils.normalise_time(None))
+
+    def test_naive_strips_seconds_and_microseconds(self):
+        timestamp = datetime.datetime(2030, 1, 1, 10, 30, 45, 123456)
+        self.assertEqual(
+            datetime.datetime(2030, 1, 1, 10, 30),
+            utils.normalise_time(timestamp),
+        )
+
+    def test_aware_converted_to_naive_utc(self):
+        tz = datetime.timezone(datetime.timedelta(hours=10))
+        timestamp = datetime.datetime(
+            2030, 1, 1, 10, 30, 45, 123456, tzinfo=tz
+        )
+        result = utils.normalise_time(timestamp)
+        self.assertIsNone(result.tzinfo)
+        self.assertEqual(datetime.datetime(2030, 1, 1, 0, 30), result)
+
+
 class TestUtcnow(base.TestCase):
     def test_utcnow_is_naive(self):
         self.assertIsNone(utils.utcnow().tzinfo)
