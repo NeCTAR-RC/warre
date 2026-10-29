@@ -13,7 +13,6 @@
 
 import datetime
 from itertools import chain
-from operator import itemgetter
 
 from blazarclient import exception as blazar_exc
 from oslo_log import log as logging
@@ -272,8 +271,9 @@ class Manager:
                 )
 
         time_list = list(chain.from_iterable(used_slots))
-        # sort on time
-        time_list.sort(key=itemgetter(0))
+        # sort on time, with "end" before "start" at the same instant so
+        # back-to-back bookings never look like they overlap
+        time_list.sort(key=lambda p: (p[0], p[1] == "start"))
         segments = []
         current_slot = 0
         last_point = None

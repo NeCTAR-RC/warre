@@ -1,0 +1,10 @@
+---
+fixes:
+  - |
+    Fixed the free slot calculation treating back-to-back reservations
+    as overlapping. When one reservation ended at the same instant
+    another started, the result depended on the order rows came back
+    from the database, and a reservation spanning the boundary could be
+    refused with "No capacity" even though a slot was free throughout.
+    Reservation end times are now always processed before start times
+    at the same instant.

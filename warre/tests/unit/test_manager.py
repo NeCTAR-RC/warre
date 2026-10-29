@@ -873,6 +873,47 @@ class TestFlavorFreeSlots(base.TestCase):
         self.assertEqual(start, slots[0]["start"])
         self.assertEqual(end, slots[0]["end"])
 
+    def _create_back_to_back_reservations(self):
+        # Insert the later reservation first so the database returns its
+        # "start" boundary before the earlier reservation's "end" boundary.
+        self.create_reservation(
+            flavor_id=self.two_slot_flavor.id,
+            status=models.Reservation.ALLOCATED,
+            start=datetime(2030, 1, 2),
+            end=datetime(2030, 1, 3),
+        )
+        self.create_reservation(
+            flavor_id=self.two_slot_flavor.id,
+            status=models.Reservation.ALLOCATED,
+            start=datetime(2030, 1, 1),
+            end=datetime(2030, 1, 2),
+        )
+
+    def test_back_to_back_reservations_row_order(self):
+        self._create_back_to_back_reservations()
+        start = datetime(2030, 1, 1)
+        end = datetime(2030, 1, 3)
+
+        slots = self.mgr.flavor_free_slots(
+            self.context, self.two_slot_flavor, start, end
+        )
+        self.assertEqual([{"start": start, "end": end}], slots)
+
+    @mock.patch("warre.worker.api.WorkerAPI")
+    def test_create_reservation_spanning_back_to_back(self, mock_worker):
+        self._create_back_to_back_reservations()
+        reservation = models.Reservation(
+            flavor_id=self.two_slot_flavor.id,
+            start=datetime(2030, 1, 1),
+            end=datetime(2030, 1, 3),
+        )
+        mgr = manager.Manager()
+        result = mgr.create_reservation(self.context, reservation)
+        self.assertEqual(self.two_slot_flavor, result.flavor)
+        mock_worker.return_value.create_lease.assert_called_once_with(
+            self.context, result.id
+        )
+
 
 @mock.patch("warre.worker.api.WorkerAPI")
 class TestCreateReservationMaintenanceWindow(base.TestCase):
