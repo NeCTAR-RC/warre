@@ -25,6 +25,15 @@ NOTIFIER = None
 
 def init():
     global TRANSPORT, NOTIFICATION_TRANSPORT, NOTIFIER
+    if (
+        TRANSPORT is not None
+        and NOTIFICATION_TRANSPORT is not None
+        and NOTIFIER is not None
+    ):
+        # Already initialised, for example by prepare_service() before
+        # create_app() is called. Creating new transports here would
+        # leak the existing ones.
+        return
     TRANSPORT = create_transport(get_transport_url())
     NOTIFICATION_TRANSPORT = messaging.get_notification_transport(cfg.CONF)
     NOTIFIER = messaging.Notifier(NOTIFICATION_TRANSPORT)

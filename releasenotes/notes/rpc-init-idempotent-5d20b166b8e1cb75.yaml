@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    The worker and notification services no longer open a second set of
+    messaging transports when they build the Flask application. The RPC
+    transport, notification transport and notifier are now created once
+    per process, and later initialisation calls reuse them.
