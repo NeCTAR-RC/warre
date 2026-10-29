@@ -1,0 +1,8 @@
+---
+fixes:
+  - |
+    Fixed the ``[worker] periodic_task_interval`` option being ignored.
+    The periodic tasks read the interval when the module was imported,
+    before the config file was parsed, so they always ran at the default
+    interval of 1800 seconds. The interval is now read from the loaded
+    config when the periodic task service starts.
