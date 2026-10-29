@@ -19,6 +19,7 @@ from keystoneauth1 import session
 from oslo_config import cfg
 from oslo_context import context
 from oslo_log import log as logging
+from sqlalchemy.orm import exc as orm_exc
 
 from warre import app
 from warre.common import blazar
@@ -57,8 +58,15 @@ class Manager:
             .filter_by(id=reservation_id)
             .first()
         )
+        if reservation is None:
+            LOG.warning(
+                "Reservation %s no longer exists, skipping lease creation",
+                reservation_id,
+            )
+            return
         bot_session = self.get_bot_session(reservation.project_id)
         blazar_client = blazar.BlazarClient(session=bot_session)
+        lease = None
         try:
             lease = blazar_client.create_lease(reservation)
         except Exception as e:
@@ -75,7 +83,25 @@ class Manager:
             reservation.status = models.Reservation.ALLOCATED
             LOG.info("Created Blazar lease with ID %s", reservation.lease_id)
         db.session.add(reservation)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except orm_exc.StaleDataError:
+            # The reservation was deleted while the lease was being created
+            db.session.rollback()
+            if lease:
+                LOG.warning(
+                    "Reservation %s was deleted during lease creation, "
+                    "deleting Blazar lease %s",
+                    reservation_id,
+                    lease["id"],
+                )
+                blazar_client.delete_lease(lease["id"])
+            else:
+                LOG.warning(
+                    "Reservation %s was deleted during lease creation",
+                    reservation_id,
+                )
+            return
         if reservation.status == models.Reservation.ALLOCATED:
             user.send_message(reservation, "create")
 

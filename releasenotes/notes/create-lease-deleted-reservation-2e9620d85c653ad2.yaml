@@ -1,0 +1,9 @@
+---
+fixes:
+  - |
+    Fixed the worker failing when a reservation is deleted while its
+    Blazar lease is being created. If the reservation no longer exists
+    when the worker picks up the request, lease creation is now skipped
+    instead of raising an error. If the reservation is deleted after the
+    lease has been created in Blazar, the worker now deletes that lease
+    instead of leaving it orphaned in Blazar.

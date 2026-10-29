@@ -15,6 +15,7 @@ import datetime
 from unittest import mock
 
 from freezegun import freeze_time
+import sqlalchemy as sa
 
 from warre.common import notifications
 from warre.extensions import db
@@ -80,6 +81,102 @@ class TestManager(base.TestCase):
             self.assertEqual("ERROR", reservation.status)
             self.assertEqual("Bad ERROR", reservation.status_reason)
             mock_user.send_message.assert_not_called()
+
+    @mock.patch("warre.worker.manager.user")
+    @mock.patch("warre.common.blazar.BlazarClient")
+    def test_create_lease_reservation_missing(
+        self, mock_blazar, mock_user, mock_app
+    ):
+        manager = worker_manager.Manager()
+
+        with mock.patch.object(manager, "get_bot_session") as get_session:
+            with self.assertLogs("warre.worker.manager", "WARNING") as logs:
+                manager.create_lease("does-not-exist")
+
+            get_session.assert_not_called()
+            mock_blazar.assert_not_called()
+            mock_user.send_message.assert_not_called()
+            self.assertIn("no longer exists", logs.output[0])
+
+    @mock.patch("warre.worker.manager.user")
+    @mock.patch("warre.common.blazar.BlazarClient")
+    def test_create_lease_reservation_deleted_during_create(
+        self, mock_blazar, mock_user, mock_app
+    ):
+        blazar_client = mock_blazar.return_value
+        flavor = self.create_flavor()
+        reservation = self.create_reservation(
+            flavor_id=flavor.id,
+            start=datetime.datetime(2021, 1, 1),
+            end=datetime.datetime(2021, 1, 2),
+        )
+        reservation_id = reservation.id
+        fake_lease = {
+            "id": "fake-lease-id",
+            "reservations": [{"flavor_id": "fake-nova-flavor"}],
+        }
+
+        def create_lease(res):
+            # Simulate the reservation being deleted through the API while
+            # the lease is being created. The ORM object stays in the
+            # session so the worker's later UPDATE matches no rows.
+            db.session.execute(
+                sa.delete(models.Reservation)
+                .where(models.Reservation.id == reservation_id)
+                .execution_options(synchronize_session=False)
+            )
+            return fake_lease
+
+        blazar_client.create_lease.side_effect = create_lease
+        manager = worker_manager.Manager()
+
+        with mock.patch.object(manager, "get_bot_session"):
+            with self.assertLogs("warre.worker.manager", "WARNING") as logs:
+                manager.create_lease(reservation_id)
+
+        blazar_client.delete_lease.assert_called_once_with("fake-lease-id")
+        mock_user.send_message.assert_not_called()
+        self.assertTrue(
+            any("fake-lease-id" in line for line in logs.output), logs.output
+        )
+
+    @mock.patch("warre.worker.manager.user")
+    @mock.patch("warre.common.blazar.BlazarClient")
+    def test_create_lease_error_reservation_deleted_during_create(
+        self, mock_blazar, mock_user, mock_app
+    ):
+        blazar_client = mock_blazar.return_value
+        flavor = self.create_flavor()
+        reservation = self.create_reservation(
+            flavor_id=flavor.id,
+            start=datetime.datetime(2021, 1, 1),
+            end=datetime.datetime(2021, 1, 2),
+        )
+        reservation_id = reservation.id
+
+        def create_lease(res):
+            db.session.execute(
+                sa.delete(models.Reservation)
+                .where(models.Reservation.id == reservation_id)
+                .execution_options(synchronize_session=False)
+            )
+            raise Exception("Bad ERROR")
+
+        blazar_client.create_lease.side_effect = create_lease
+        manager = worker_manager.Manager()
+
+        with mock.patch.object(manager, "get_bot_session"):
+            with self.assertLogs("warre.worker.manager", "WARNING") as logs:
+                manager.create_lease(reservation_id)
+
+        blazar_client.delete_lease.assert_not_called()
+        mock_user.send_message.assert_not_called()
+        self.assertTrue(
+            any(
+                "deleted during lease creation" in line for line in logs.output
+            ),
+            logs.output,
+        )
 
     @freeze_time("2021-01-27")
     def test_clean_old_reservations(self, mock_app):
