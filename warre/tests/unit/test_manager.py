@@ -461,6 +461,87 @@ class TestManager(base.TestCase):
             new_end = datetime(2021, 1, 7)
             mgr.extend_reservation(self.context, reservation, new_end)
 
+    @freeze_time("2029-12-01")
+    @mock.patch("warre.worker.api.WorkerAPI")
+    def test_create_reservation_instance_count_exceeds_slots(
+        self, mock_worker
+    ):
+        flavor = self.create_flavor(slots=2)
+        reservation = models.Reservation(
+            flavor_id=flavor.id,
+            start=datetime(2030, 1, 1),
+            end=datetime(2030, 1, 2),
+            instance_count=3,
+        )
+        mgr = manager.Manager()
+        with self.assertRaisesRegex(
+            exceptions.InvalidReservation, "No capacity"
+        ):
+            mgr.create_reservation(self.context, reservation)
+        mock_worker.return_value.create_lease.assert_not_called()
+
+    @freeze_time("2029-12-01")
+    @mock.patch("warre.worker.api.WorkerAPI")
+    def test_create_reservation_instance_count_partial_capacity(
+        self, mock_worker
+    ):
+        flavor = self.create_flavor(slots=3)
+        self.create_reservation(
+            flavor_id=flavor.id,
+            status=models.Reservation.ALLOCATED,
+            start=datetime(2030, 1, 1),
+            end=datetime(2030, 1, 3),
+            instance_count=2,
+        )
+        mgr = manager.Manager()
+        reservation = models.Reservation(
+            flavor_id=flavor.id,
+            start=datetime(2030, 1, 2),
+            end=datetime(2030, 1, 4),
+            instance_count=2,
+        )
+        with self.assertRaisesRegex(
+            exceptions.InvalidReservation, "No capacity"
+        ):
+            mgr.create_reservation(self.context, reservation)
+
+        reservation = models.Reservation(
+            flavor_id=flavor.id,
+            start=datetime(2030, 1, 2),
+            end=datetime(2030, 1, 4),
+            instance_count=1,
+        )
+        result = mgr.create_reservation(self.context, reservation)
+        self.assertEqual(1, result.instance_count)
+
+    @freeze_time("2030-01-01")
+    @mock.patch("warre.common.blazar.BlazarClient")
+    def test_extend_reservation_instance_count_no_capacity(self, mock_blazar):
+        flavor = self.create_flavor(slots=2)
+        reservation = self.create_reservation(
+            status=models.Reservation.ACTIVE,
+            flavor_id=flavor.id,
+            start=datetime(2030, 1, 1),
+            end=datetime(2030, 1, 2),
+            instance_count=2,
+        )
+        reservation.lease_id = "foobar"
+        self.create_reservation(
+            status=models.Reservation.ALLOCATED,
+            flavor_id=flavor.id,
+            start=datetime(2030, 1, 3),
+            end=datetime(2030, 1, 4),
+        )
+
+        mgr = manager.Manager()
+        with self.assertRaisesRegex(
+            exceptions.InvalidReservation, "No capacity"
+        ):
+            mgr.extend_reservation(
+                self.context, reservation, datetime(2030, 1, 5)
+            )
+        mock_blazar.return_value.update_lease.assert_not_called()
+
     def test_delete_flavor(self):
         flavors_pre = db.session.query(models.Flavor).all()
         flavor = self.create_flavor()

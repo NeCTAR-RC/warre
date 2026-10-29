@@ -1,0 +1,17 @@
+---
+fixes:
+  - |
+    Creating or extending a reservation now checks that the flavor has
+    enough free slots for every instance in the reservation. Previously
+    only one free slot was required, so a reservation with an
+    ``instance_count`` larger than the free capacity (or larger than the
+    flavor's total ``slots``) was accepted and then blocked other
+    reservations for its whole duration.
+upgrade:
+  - |
+    ``POST /v1/reservations/`` and reservation extension now return
+    "No capacity" (HTTP 400) when the flavor does not have
+    ``instance_count`` free slots for the whole requested period.
+    Multi-instance requests that were previously accepted may now be
+    rejected. The ``GET /v1/flavors/<id>/freeslots/`` endpoint is
+    unchanged and still reports periods with at least one free slot.

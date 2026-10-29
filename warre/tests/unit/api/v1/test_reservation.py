@@ -110,8 +110,9 @@ class TestReservationAPI(base.ApiTestCase):
         )
 
     def test_create_reservation_multiple_instances(self):
+        flavor = self.create_flavor(slots=2)
         data = {
-            "flavor_id": self.flavor.id,
+            "flavor_id": flavor.id,
             "start": "2020-01-01T00:00:00+00:00",
             "end": "2020-01-01T01:00:00+00:00",
             "instance_count": 2,
@@ -123,8 +124,9 @@ class TestReservationAPI(base.ApiTestCase):
     def test_create_reservation_hours_quota_includes_instance_count(self):
         enforcer = quota.get_enforcer.return_value
         enforcer.reset_mock()
+        flavor = self.create_flavor(slots=3)
         data = {
-            "flavor_id": self.flavor.id,
+            "flavor_id": flavor.id,
             "start": "2020-01-01T00:00:00+00:00",
             "end": "2020-01-01T04:00:00+00:00",
             "instance_count": 3,

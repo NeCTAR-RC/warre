@@ -92,6 +92,7 @@ class Manager:
             reservation.end,
             reservation,
             include_maintenance=not bypass_maintenance,
+            instance_count=reservation.instance_count,
         )
 
         if free_slots:
@@ -135,7 +136,12 @@ class Manager:
             )
 
         free_slots = self.flavor_free_slots(
-            context, reservation.flavor, reservation.end, new_end, reservation
+            context,
+            reservation.flavor,
+            reservation.end,
+            new_end,
+            reservation,
+            instance_count=reservation.instance_count,
         )
 
         if free_slots:
@@ -196,6 +202,7 @@ class Manager:
         end,
         reservation=None,
         include_maintenance=True,
+        instance_count=1,
     ):
         """Get the free slots of a flavor
         Algorithm:
@@ -206,8 +213,15 @@ class Manager:
         reservation - used to exclude an existing reservation when extending
         include_maintenance - when False, treat maintenance windows as not
             occupying any slots (admin bypass for testing during a window)
+        instance_count - number of slots the new or extended reservation
+            needs; a time segment only counts as free when this many slots
+            are available in it
         """
         if not flavor.active:
+            return []
+
+        # The request can never fit, even with nothing else booked
+        if instance_count > flavor.slots:
             return []
 
         now = datetime.datetime.utcnow()
@@ -288,8 +302,11 @@ class Manager:
             current_slot = (
                 current_slot + 1 if kind == "start" else current_slot - 1
             )
-        # Pass2: only keep slot >= maximum capacity, a.k.a. busy slots
-        busy_slots = [s for s in segments if s["slot"] >= flavor.slots]
+        # Pass2: only keep segments without room for instance_count more
+        # slots, a.k.a. busy slots
+        busy_slots = [
+            s for s in segments if s["slot"] + instance_count > flavor.slots
+        ]
 
         if len(busy_slots) == 0:
             return [{"start": start, "end": end}]
