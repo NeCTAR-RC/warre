@@ -27,6 +27,7 @@ from warre.common import clients
 from warre.common import keystone
 from warre.common import notifications
 from warre.common import rpc
+from warre.common import utils
 from warre.extensions import db
 from warre import models
 from warre.notification import user
@@ -130,7 +131,7 @@ class Manager:
     @app_context
     def clean_old_reservations(self):
         LOG.info("Cleaning old reservations")
-        now = datetime.datetime.utcnow()
+        now = utils.utcnow()
         week_ago = now - datetime.timedelta(days=7)
         reservations = (
             db.session.query(models.Reservation)
@@ -146,7 +147,7 @@ class Manager:
     @app_context
     def clean_old_maintenance_windows(self):
         LOG.info("Cleaning finished maintenance windows")
-        now = datetime.datetime.utcnow()
+        now = utils.utcnow()
         windows = (
             db.session.query(models.MaintenanceWindow)
             .filter(models.MaintenanceWindow.end < now)
@@ -169,7 +170,7 @@ class Manager:
         k_session = keystone.KeystoneSession().get_session()
         nova = clients.get_novaclient(k_session)
         for reservation in reservations:
-            if reservation.end < datetime.datetime.utcnow():
+            if reservation.end < utils.utcnow():
                 LOG.warning(
                     "Reservation %s has ended but still "
                     "active, marking as COMPLETE",

@@ -11,7 +11,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import datetime
 import math
 
 from oslo_config import cfg
@@ -19,6 +18,7 @@ from oslo_log import log
 from oslo_utils import uuidutils
 
 from warre.common import exceptions
+from warre.common import utils
 from warre.extensions import db
 
 
@@ -104,7 +104,7 @@ class FlavorProject(db.Model):
     def __init__(self, project_id, flavor_id):
         self.id = uuidutils.generate_uuid()
         self.project_id = project_id
-        flavor = db.session.query(Flavor).get(flavor_id)
+        flavor = db.session.get(Flavor, flavor_id)
         if not flavor:
             raise exceptions.FlavorDoesNotExist()
         self.flavor_id = flavor_id
@@ -174,9 +174,9 @@ class Reservation(db.Model):
         self, flavor_id, start, end, status=PENDING_CREATE, instance_count=1
     ):
         self.id = uuidutils.generate_uuid()
-        self.created_at = datetime.datetime.utcnow()
+        self.created_at = utils.utcnow()
         self.status = status
-        flavor = db.session.query(Flavor).get(flavor_id)
+        flavor = db.session.get(Flavor, flavor_id)
         if not flavor:
             raise exceptions.FlavorDoesNotExist()
         self.flavor_id = flavor_id

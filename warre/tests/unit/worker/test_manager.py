@@ -287,7 +287,7 @@ class TestManager(base.TestCase):
         manager.notify_exists()
 
         notifier.info.assert_not_called()
-        res_new = db.session.query(models.Reservation).get(res.id)
+        res_new = db.session.get(models.Reservation, res.id)
         self.assertEqual(models.Reservation.COMPLETE, res_new.status)
 
     @freeze_time("2021-01-27")

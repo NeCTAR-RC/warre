@@ -11,8 +11,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import datetime
-
 from flask import request
 import flask_restful
 from flask_restful import reqparse
@@ -94,7 +92,7 @@ class MaintenanceWindowList(base.Resource):
                 "error_message": "Maintenance window end time must be after start time"
             }, 400
 
-        now = datetime.datetime.utcnow().replace(second=0, microsecond=0)
+        now = utils.utcnow().replace(second=0, microsecond=0)
         if window.start < now:
             return {
                 "error_message": "Maintenance window cannot start in the past"
@@ -176,7 +174,7 @@ class MaintenanceWindowResource(base.Resource):
             }, 400
 
         if "start" in json_data:
-            now = datetime.datetime.utcnow().replace(second=0, microsecond=0)
+            now = utils.utcnow().replace(second=0, microsecond=0)
             if window.start < now:
                 return {
                     "error_message": "Maintenance window cannot start in the past"

@@ -248,7 +248,7 @@ class TestAdminFlavorAPI(TestFlavorAPI):
         data = {"slots": 50}
         response = self.client.patch(f"/v1/flavors/{flavor.id}/", json=data)
         self.assertStatus(response, 200)
-        flavor = db.session.query(models.Flavor).get(flavor.id)
+        flavor = db.session.get(models.Flavor, flavor.id)
         api_flavor = response.get_json()
         self.assertEqual(50, api_flavor.get("slots"))
         self.assertEqual(50, flavor.slots)

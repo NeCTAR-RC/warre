@@ -11,6 +11,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import datetime
+
 
 def normalise_time(timestamp):
     """Normalize time in arbitrary timezone to UTC naive object.
@@ -25,3 +27,13 @@ def normalise_time(timestamp):
     if offset is None:
         return timestamp
     return timestamp.replace(tzinfo=None) - offset
+
+
+def utcnow():
+    """Return the current time as a naive datetime in UTC.
+
+    Replaces the deprecated datetime.datetime.utcnow(). The database
+    columns and existing comparisons all use naive UTC datetimes, so
+    the timezone is stripped after reading the aware current time.
+    """
+    return datetime.datetime.now(datetime.UTC).replace(tzinfo=None)

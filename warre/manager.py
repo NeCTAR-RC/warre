@@ -19,6 +19,7 @@ from oslo_log import log as logging
 
 from warre.common import blazar
 from warre.common import exceptions
+from warre.common import utils
 from warre.extensions import db
 from warre import models
 from warre.worker import api as worker_api
@@ -34,7 +35,7 @@ class Manager:
     def create_reservation(
         self, context, reservation, bypass_maintenance=False
     ):
-        flavor = db.session.query(models.Flavor).get(reservation.flavor_id)
+        flavor = db.session.get(models.Flavor, reservation.flavor_id)
         if not flavor.active:
             raise exceptions.InvalidReservation("Flavor is not available")
 
@@ -72,7 +73,7 @@ class Manager:
                 "Reservation end time must be after the start time"
             )
 
-        now = datetime.datetime.utcnow().replace(second=0, microsecond=0)
+        now = utils.utcnow().replace(second=0, microsecond=0)
         if reservation.start < now:
             raise exceptions.InvalidReservation(
                 "Reservation start time is in the past"
@@ -136,7 +137,7 @@ class Manager:
                 "Reservation must be in ACTIVE state"
             )
 
-        now = datetime.datetime.utcnow()
+        now = utils.utcnow()
         if (new_end - now).total_seconds() > (
             reservation.flavor.max_length_hours * 60 * 60
         ):
@@ -234,7 +235,7 @@ class Manager:
         if instance_count > flavor.slots:
             return []
 
-        now = datetime.datetime.utcnow()
+        now = utils.utcnow()
         if flavor.end and flavor.end < now:
             return []
 

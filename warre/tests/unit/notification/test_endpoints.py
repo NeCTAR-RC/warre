@@ -108,5 +108,5 @@ class TestEndpoints(base.TestCase):
         self.assertEqual(models.Reservation.ALLOCATED, reservation.status)
 
         ep.sample(self.context, "pub-id", "event", payload, {})
-        reservation = db.session.query(models.Reservation).get(reservation.id)
+        reservation = db.session.get(models.Reservation, reservation.id)
         self.assertEqual(status, reservation.status)

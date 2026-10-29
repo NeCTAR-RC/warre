@@ -11,7 +11,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from datetime import datetime
 from datetime import timedelta
 
 from flask import request
@@ -197,13 +196,13 @@ class FlavorFreeSlot(Flavor):
         parser.add_argument(
             "start",
             type=inputs.date,
-            default=datetime.utcnow(),
+            default=utils.utcnow(),
             location="args",
         )
         parser.add_argument(
             "end",
             type=inputs.date,
-            default=datetime.utcnow() + timedelta(days=365),
+            default=utils.utcnow() + timedelta(days=365),
             location="args",
         )
         args = parser.parse_args()

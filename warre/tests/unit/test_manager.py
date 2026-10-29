@@ -286,9 +286,7 @@ class TestManager(base.TestCase):
         reservation = mgr.extend_reservation(
             self.context, reservation, new_end
         )
-        reservation_db = db.session.query(models.Reservation).get(
-            reservation.id
-        )
+        reservation_db = db.session.get(models.Reservation, reservation.id)
 
         self.assertEqual(new_end, reservation.end)
         self.assertEqual(reservation_db, reservation)
