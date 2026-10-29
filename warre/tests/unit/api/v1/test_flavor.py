@@ -12,6 +12,7 @@
 #    under the License.
 
 import datetime
+import urllib.parse
 
 from warre.extensions import db
 from warre import models
@@ -131,6 +132,48 @@ class TestFlavorAPI(base.ApiTestCase):
         self.assert200(response)
         results = response.get_json().get("results")
         self.assertEqual(1, len(results))
+
+    def test_flavor_list_next_keeps_query_params(self):
+        gpu_ids = [
+            self.create_flavor(name=f"gpu.{n}", category="gpu").id
+            for n in range(3)
+        ]
+        self.create_flavor(name="cpu.0")
+
+        response = self.client.get("/v1/flavors/?limit=2&category=gpu")
+        self.assert200(response)
+        data = response.get_json()
+        self.assertEqual(2, len(data.get("results")))
+        self.assertIn("next", data)
+
+        next_url = urllib.parse.urlparse(data["next"])
+        query = urllib.parse.parse_qs(next_url.query)
+        self.assertEqual(["2"], query.get("limit"))
+        self.assertEqual(["gpu"], query.get("category"))
+        self.assertEqual(["2"], query.get("page"))
+
+        response = self.client.get(f"{next_url.path}?{next_url.query}")
+        self.assert200(response)
+        data = response.get_json()
+        results = data.get("results")
+        self.assertEqual(1, len(results))
+        self.assertEqual(gpu_ids[2], results[0]["id"])
+        self.assertNotIn("next", data)
+
+    def test_flavor_list_next_replaces_page(self):
+        for n in range(3):
+            self.create_flavor(name=f"test.{n}")
+
+        response = self.client.get("/v1/flavors/?limit=1&page=2")
+        self.assert200(response)
+        data = response.get_json()
+        self.assertEqual(1, len(data.get("results")))
+
+        query = urllib.parse.parse_qs(
+            urllib.parse.urlparse(data["next"]).query
+        )
+        self.assertEqual(["3"], query.get("page"))
+        self.assertEqual(["1"], query.get("limit"))
 
     def test_flavor_get_private_no_access(self):
         flavor = self.create_flavor(is_public=False)

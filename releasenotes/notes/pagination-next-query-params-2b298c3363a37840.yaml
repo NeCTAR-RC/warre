@@ -1,0 +1,9 @@
+---
+fixes:
+  - |
+    Fixed the ``next`` link in paginated list responses dropping the
+    request's query parameters. The link only contained ``page``, so
+    following it lost filters such as ``category``, ``all_projects`` and
+    ``project_id`` and reverted to the default ``limit``. The ``next``
+    link now keeps all query parameters from the original request and
+    only replaces ``page``.

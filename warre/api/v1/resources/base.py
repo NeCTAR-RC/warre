@@ -11,6 +11,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import urllib.parse
+
 import flask
 from flask import request
 import flask_restful
@@ -63,5 +65,12 @@ class Resource(flask_restful.Resource):
         }
 
         if items.has_next:
-            response["next"] = f"{request.base_url}?page={items.next_num}"
+            # Keep the caller's query parameters (filters, limit, etc.)
+            # and only replace the page number.
+            next_args = request.args.copy()
+            next_args["page"] = items.next_num
+            query_string = urllib.parse.urlencode(
+                list(next_args.items(multi=True))
+            )
+            response["next"] = f"{request.base_url}?{query_string}"
         return response
