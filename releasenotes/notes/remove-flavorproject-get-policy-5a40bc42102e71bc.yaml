@@ -1,0 +1,7 @@
+---
+upgrade:
+  - |
+    The unused policy rule ``warre:flavorproject:get`` has been removed.
+    The API has never provided an endpoint to show a single flavor
+    project, so the rule had no effect. Operators can safely delete it
+    from any custom policy file.

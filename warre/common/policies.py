@@ -117,16 +117,6 @@ FLAVORPROJECT_PREFIX = "warre:flavorproject:%s"
 
 flavorproject_rules = [
     policy.DocumentedRuleDefault(
-        name=FLAVORPROJECT_PREFIX % "get",
-        check_str=f"rule:{ADMIN_OR_READER}",
-        scope_types=SCOPE_SYSTEM_PROJECT,
-        description="Show flavorproject details.",
-        operations=[
-            {"path": "/v1/flavorprojects/{flavor_id}/", "method": "GET"},
-            {"path": "/v1/flavorprojects/{flavor_id}/", "method": "HEAD"},
-        ],
-    ),
-    policy.DocumentedRuleDefault(
         name=FLAVORPROJECT_PREFIX % "list",
         check_str=f"rule:{ADMIN_OR_READER}",
         scope_types=SCOPE_SYSTEM_PROJECT,
@@ -149,7 +139,10 @@ flavorproject_rules = [
         scope_types=SCOPE_SYSTEM_PROJECT,
         description="Delete flavorproject.",
         operations=[
-            {"path": "/v1/flavorprojects/{flavor_id}/", "method": "DELETE"}
+            {
+                "path": "/v1/flavorprojects/{flavorproject_id}/",
+                "method": "DELETE",
+            }
         ],
     ),
 ]

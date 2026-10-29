@@ -14,6 +14,7 @@
 from oslo_config import cfg
 from oslo_policy import policy
 
+from warre.api.v1.resources import flavorproject
 from warre.common import policies
 from warre.tests.unit import base
 
@@ -39,3 +40,26 @@ class TestPolicyDefaults(base.TestCase):
         enforcer.register_defaults(policies.list_rules())
         enforcer.load_rules()
         self.assertIn("system_reader", enforcer.rules)
+
+    def test_flavorproject_rules_match_resource_methods(self):
+        # Each flavorproject rule must back a handler the API implements,
+        # so the policy docs never advertise an endpoint that returns 405.
+        handlers = {
+            "list": (flavorproject.FlavorProjectList, "get"),
+            "create": (flavorproject.FlavorProjectList, "post"),
+            "get": (flavorproject.FlavorProject, "get"),
+            "update": (flavorproject.FlavorProject, "patch"),
+            "delete": (flavorproject.FlavorProject, "delete"),
+        }
+        prefix = policies.FLAVORPROJECT_PREFIX % ""
+        for rule in policies.flavorproject_rules:
+            action = rule.name.removeprefix(prefix)
+            self.assertIn(action, handlers, f"Unknown rule {rule.name}")
+            resource, method = handlers[action]
+            self.assertTrue(
+                hasattr(resource, method),
+                f"Policy rule {rule.name} has no {resource.__name__}."
+                f"{method} handler",
+            )
+        names = [rule.name for rule in policies.list_rules()]
+        self.assertNotIn("warre:flavorproject:get", names)
