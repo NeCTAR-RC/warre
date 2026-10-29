@@ -1,0 +1,18 @@
+---
+fixes:
+  - |
+    Creating a reservation now validates ``instance_count``, the start
+    time and the length of the reservation. Previously an
+    ``instance_count`` of zero or less was accepted (a negative count
+    reduced the hours quota usage and was passed to Blazar), and
+    reservations with a start time in the past or with the same start
+    and end time were accepted and then went into the ``ERROR`` state
+    when Blazar rejected the lease.
+upgrade:
+  - |
+    ``POST /v1/reservations/`` now returns HTTP 422 when
+    ``instance_count`` is less than 1, and HTTP 400 when the start time
+    is earlier than the current UTC minute or the end time is not after
+    the start time. Clients can no longer create reservations that
+    start in the past, have zero length, or have an ``instance_count``
+    below 1.

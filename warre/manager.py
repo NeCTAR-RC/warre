@@ -67,6 +67,16 @@ class Manager:
                 f"Reservation start time of {reservation.start} after "
                 f"reservation end time of {reservation.end}"
             )
+        if reservation.end == reservation.start:
+            raise exceptions.InvalidReservation(
+                "Reservation end time must be after the start time"
+            )
+
+        now = datetime.datetime.utcnow().replace(second=0, microsecond=0)
+        if reservation.start < now:
+            raise exceptions.InvalidReservation(
+                "Reservation start time is in the past"
+            )
 
         if not bypass_maintenance:
             maintenance_windows = (

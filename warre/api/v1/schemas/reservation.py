@@ -11,6 +11,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from marshmallow import validate
+
 from warre.api.v1.schemas import flavor
 from warre.extensions import ma
 from warre import models
@@ -27,6 +29,8 @@ class ReservationSchema(ma.SQLAlchemyAutoSchema):
 
 
 class ReservationCreateSchema(ma.SQLAlchemyAutoSchema):
+    instance_count = ma.auto_field(validate=validate.Range(min=1))
+
     class Meta:
         model = models.Reservation
         load_instance = True

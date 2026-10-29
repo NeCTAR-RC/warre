@@ -35,6 +35,7 @@ class TestManager(base.TestCase):
             end=datetime(2020, 1, 2),
         )
 
+    @freeze_time("2019-12-01")
     @mock.patch("warre.worker.api.WorkerAPI")
     def test_create_reservation(self, mock_worker):
         worker = mock_worker.return_value
@@ -54,6 +55,7 @@ class TestManager(base.TestCase):
             self.context, reservation.id
         )
 
+    @freeze_time("2019-12-01")
     @mock.patch("warre.worker.api.WorkerAPI")
     def test_create_reservation_with_future_allocated_slot(self, mock_worker):
         worker = mock_worker.return_value
@@ -175,6 +177,7 @@ class TestManager(base.TestCase):
         ):
             mgr.create_reservation(self.context, reservation)
 
+    @freeze_time("2019-12-01")
     def test_create_reservation_no_slots(self):
         flavor = self.create_flavor(slots=1)
         reservation1 = models.Reservation(
@@ -197,6 +200,7 @@ class TestManager(base.TestCase):
         ):
             mgr.create_reservation(self.context, reservation2)
 
+    @freeze_time("2019-12-01")
     def test_create_reservation_no_slots_multi_instance(self):
         flavor = self.create_flavor(slots=5)
         reservation1 = models.Reservation(
@@ -460,6 +464,38 @@ class TestManager(base.TestCase):
         ):
             new_end = datetime(2021, 1, 7)
             mgr.extend_reservation(self.context, reservation, new_end)
+
+    @freeze_time("2029-12-01")
+    def test_create_reservation_zero_length(self):
+        flavor = self.create_flavor()
+        reservation = models.Reservation(
+            flavor_id=flavor.id,
+            start=datetime(2030, 1, 1),
+            end=datetime(2030, 1, 1),
+        )
+        mgr = manager.Manager()
+
+        with self.assertRaisesRegex(
+            exceptions.InvalidReservation,
+            "Reservation end time must be after the start time",
+        ):
+            mgr.create_reservation(self.context, reservation)
+
+    @freeze_time("2030-01-01 12:00:00")
+    def test_create_reservation_start_in_past(self):
+        flavor = self.create_flavor()
+        reservation = models.Reservation(
+            flavor_id=flavor.id,
+            start=datetime(2030, 1, 1, 11, 59),
+            end=datetime(2030, 1, 2),
+        )
+        mgr = manager.Manager()
+
+        with self.assertRaisesRegex(
+            exceptions.InvalidReservation,
+            "Reservation start time is in the past",
+        ):
+            mgr.create_reservation(self.context, reservation)
 
     @freeze_time("2029-12-01")
     @mock.patch("warre.worker.api.WorkerAPI")
@@ -996,6 +1032,7 @@ class TestFlavorFreeSlots(base.TestCase):
         )
 
 
+@freeze_time("2020-12-01")
 @mock.patch("warre.worker.api.WorkerAPI")
 class TestCreateReservationMaintenanceWindow(base.TestCase):
     def setUp(self):

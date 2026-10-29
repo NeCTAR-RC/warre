@@ -14,6 +14,8 @@
 import datetime
 from unittest import mock
 
+from freezegun import freeze_time
+
 from warre.extensions import db
 from warre import models
 from warre import quota
@@ -77,6 +79,7 @@ class TestReservationAPI(base.ApiTestCase):
         results = response.get_json().get("results")
         self.assertEqual(0, len(results))
 
+    @freeze_time("2019-12-01")
     def test_create_reservation(self):
         data = {
             "flavor_id": self.flavor.id,
@@ -93,6 +96,7 @@ class TestReservationAPI(base.ApiTestCase):
             "2020-01-01T01:00:00+00:00", response.get_json().get("end")
         )
 
+    @freeze_time("2019-12-01")
     def test_create_reservation_different_tz(self):
         data = {
             "flavor_id": self.flavor.id,
@@ -109,6 +113,7 @@ class TestReservationAPI(base.ApiTestCase):
             "2020-01-01T08:00:00+00:00", response.get_json().get("end")
         )
 
+    @freeze_time("2019-12-01")
     def test_create_reservation_multiple_instances(self):
         flavor = self.create_flavor(slots=2)
         data = {
@@ -121,6 +126,7 @@ class TestReservationAPI(base.ApiTestCase):
         self.assert200(response)
         self.assertEqual(2, response.get_json().get("instance_count"))
 
+    @freeze_time("2019-12-01")
     def test_create_reservation_hours_quota_includes_instance_count(self):
         enforcer = quota.get_enforcer.return_value
         enforcer.reset_mock()
@@ -161,6 +167,71 @@ class TestReservationAPI(base.ApiTestCase):
         }
         response = self.client.post("/v1/reservations/", json=data)
         self.assertStatus(response, 422)
+
+    @freeze_time("2029-12-01")
+    def test_create_reservation_zero_instance_count(self):
+        data = {
+            "flavor_id": self.flavor.id,
+            "start": "2030-01-01T00:00:00+00:00",
+            "end": "2030-01-01T01:00:00+00:00",
+            "instance_count": 0,
+        }
+        response = self.client.post("/v1/reservations/", json=data)
+        self.assertStatus(response, 422)
+        self.assertIn(
+            "instance_count", response.get_json().get("error_message")
+        )
+
+    @freeze_time("2029-12-01")
+    def test_create_reservation_negative_instance_count(self):
+        data = {
+            "flavor_id": self.flavor.id,
+            "start": "2030-01-01T00:00:00+00:00",
+            "end": "2030-01-01T01:00:00+00:00",
+            "instance_count": -1,
+        }
+        response = self.client.post("/v1/reservations/", json=data)
+        self.assertStatus(response, 422)
+        self.assertIn(
+            "instance_count", response.get_json().get("error_message")
+        )
+
+    @freeze_time("2029-12-01")
+    def test_create_reservation_start_equals_end(self):
+        data = {
+            "flavor_id": self.flavor.id,
+            "start": "2030-01-01T00:00:00+00:00",
+            "end": "2030-01-01T00:00:00+00:00",
+        }
+        response = self.client.post("/v1/reservations/", json=data)
+        self.assert400(response)
+        self.assertIn(
+            "must be after", response.get_json().get("error_message")
+        )
+
+    @freeze_time("2030-01-01 12:00:00")
+    def test_create_reservation_start_in_past(self):
+        data = {
+            "flavor_id": self.flavor.id,
+            "start": "2030-01-01T11:00:00+00:00",
+            "end": "2030-01-01T14:00:00+00:00",
+        }
+        response = self.client.post("/v1/reservations/", json=data)
+        self.assert400(response)
+        self.assertEqual(
+            "Reservation start time is in the past",
+            response.get_json().get("error_message"),
+        )
+
+    @freeze_time("2030-01-01 12:00:30")
+    def test_create_reservation_start_current_minute(self):
+        data = {
+            "flavor_id": self.flavor.id,
+            "start": "2030-01-01T12:00:00+00:00",
+            "end": "2030-01-01T14:00:00+00:00",
+        }
+        response = self.client.post("/v1/reservations/", json=data)
+        self.assert200(response)
 
     def test_get_reservation(self):
         reservation = self.create_reservation(
@@ -307,6 +378,7 @@ class TestReservationAPI(base.ApiTestCase):
             reservation_json.get("error_message"),
         )
 
+    @freeze_time("2019-12-01")
     def test_create_reservation_during_maintenance_window_denied(self):
         self.create_maintenance_window(
             start=datetime.datetime(2020, 1, 1),
@@ -331,6 +403,7 @@ class TestAdminReservationAPI(TestReservationAPI):
     # by default, so a real admin token also carries "member".
     ROLES = ["admin", "member"]
 
+    @freeze_time("2019-12-01")
     def test_create_reservation_during_maintenance_window_denied(self):
         # Admins are allowed to bypass the maintenance window check.
         self.create_maintenance_window(
