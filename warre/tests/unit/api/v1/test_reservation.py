@@ -303,6 +303,38 @@ class TestReservationAPI(base.ApiTestCase):
         )
         self.assert400(response)
 
+    def test_update_reservation_other_project_not_found(self):
+        reservation = self.create_reservation(
+            flavor_id=self.flavor.id,
+            project_id="someone-else",
+            start=datetime.datetime(2021, 1, 1, 0, 0),
+            end=datetime.datetime(2021, 1, 2, 23, 59),
+        )
+
+        # An invalid body must not reveal that the reservation exists
+        response = self.client.patch(
+            f"/v1/reservations/{reservation.id}/", json={}
+        )
+        self.assert404(response)
+
+        data = {"end": "2021-01-03T23:59:00+00:00"}
+        response = self.client.patch(
+            f"/v1/reservations/{reservation.id}/", json=data
+        )
+        self.assert404(response)
+
+    def test_update_reservation_invalid_body(self):
+        reservation = self.create_reservation(
+            flavor_id=self.flavor.id,
+            start=datetime.datetime(2021, 1, 1, 0, 0),
+            end=datetime.datetime(2021, 1, 2, 23, 59),
+        )
+
+        response = self.client.patch(
+            f"/v1/reservations/{reservation.id}/", json={}
+        )
+        self.assert400(response)
+
     @mock.patch("warre.common.blazar.BlazarClient")
     def test_update_reservation(self, mock_blazar):
         reservation = self.create_reservation(
@@ -456,6 +488,21 @@ class TestAdminReservationAPI(TestReservationAPI):
         self.assert200(response)
         results = response.get_json().get("results")
         self.assertEqual(2, len(results))
+
+    def test_update_reservation_other_project_not_found(self):
+        # Admins may update reservations in any project, so the body is
+        # validated rather than the reservation being hidden.
+        reservation = self.create_reservation(
+            flavor_id=self.flavor.id,
+            project_id="someone-else",
+            start=datetime.datetime(2021, 1, 1, 0, 0),
+            end=datetime.datetime(2021, 1, 2, 23, 59),
+        )
+
+        response = self.client.patch(
+            f"/v1/reservations/{reservation.id}/", json={}
+        )
+        self.assert400(response)
 
     @mock.patch("warre.common.blazar.BlazarClient")
     def test_extend_reservation_other_project_charges_owner(self, mock_blazar):

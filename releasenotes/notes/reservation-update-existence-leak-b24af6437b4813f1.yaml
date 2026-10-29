@@ -1,0 +1,9 @@
+---
+fixes:
+  - |
+    Fixed ``PATCH /v1/reservations/<id>/`` revealing whether a reservation
+    owned by another project exists. The request body was validated
+    before the caller was authorised, so an invalid body returned HTTP
+    400 for an existing reservation and HTTP 404 otherwise. The caller is
+    now authorised first, so a reservation the caller cannot update
+    always returns HTTP 404.

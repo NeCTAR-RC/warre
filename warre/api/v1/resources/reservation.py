@@ -176,17 +176,19 @@ class Reservation(base.Resource):
 
     def patch(self, id):
         reservation = self._get_reservation(id)
-        data = request.get_json()
 
-        errors = schemas.reservationupdate.validate(data)
-        if errors:
-            flask_restful.abort(400, message=errors)
-
+        # Authorise before validating the body so an invalid body does not
+        # reveal that a reservation owned by another project exists
         target = {"project_id": reservation.project_id}
         try:
             self.authorize("update", target)
         except policy.PolicyNotAuthorized:
             flask_restful.abort(404, message=f"Reservation {id} doesn't exist")
+
+        data = request.get_json()
+        errors = schemas.reservationupdate.validate(data)
+        if errors:
+            flask_restful.abort(400, message=errors)
 
         new_reservation = schemas.reservationupdate.load(data)
         new_end = utils.normalise_time(new_reservation.get("end"))
