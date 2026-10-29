@@ -30,7 +30,8 @@ class Resource(flask_restful.Resource):
     def __init__(self):
         self.manager = manager.Manager()
 
-    def authorize(self, rule, target={}, do_raise=True):
+    def authorize(self, rule, target=None, do_raise=True):
+        target = {} if target is None else target
         rule = self.POLICY_PREFIX % rule
         enforcer = policy.get_enforcer()
         try:

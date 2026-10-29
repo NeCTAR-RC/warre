@@ -64,7 +64,7 @@ class Flavor(db.Model):
         max_length_hours=504,
         slots=1,
         is_public=True,
-        extra_specs={},
+        extra_specs=None,
         start=None,
         end=None,
         category=None,
@@ -82,7 +82,7 @@ class Flavor(db.Model):
         self.slots = slots
         self.properties = properties
         self.is_public = is_public
-        self.extra_specs = extra_specs
+        self.extra_specs = {} if extra_specs is None else extra_specs
         self.start = start
         self.end = end
         self.category = category

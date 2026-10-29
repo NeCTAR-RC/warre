@@ -104,7 +104,10 @@ ks_loading.register_auth_conf_options(cfg.CONF, "service_auth")
 ks_loading.register_session_conf_options(cfg.CONF, "service_auth")
 
 
-def init(args=[], conf_file="/etc/warre/warre.conf"):
+def init(args=None, conf_file="/etc/warre/warre.conf"):
+    # Default to an empty list, not None: oslo.config parses sys.argv
+    # when args is None.
+    args = [] if args is None else args
     cfg.CONF(args, project="warre", default_config_files=[conf_file])
 
 

@@ -39,3 +39,11 @@ class TestModels(base.TestCase):
         self.assertEqual(504, flavor.max_length_hours)
         self.assertTrue(flavor.active)
         self.assertTrue(flavor.is_public)
+
+    def test_create_flavor_extra_specs_not_shared(self):
+        flavor1 = models.Flavor(name="one", vcpu=1, memory_mb=10, disk_gb=5)
+        flavor2 = models.Flavor(name="two", vcpu=1, memory_mb=10, disk_gb=5)
+        self.assertEqual({}, flavor1.extra_specs)
+        self.assertIsNot(flavor1.extra_specs, flavor2.extra_specs)
+        flavor1.extra_specs["foo"] = "bar"
+        self.assertEqual({}, flavor2.extra_specs)

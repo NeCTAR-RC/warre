@@ -49,7 +49,8 @@ class UserNotifierBase:
         raise NotImplementedError
 
     @staticmethod
-    def render_template(tmpl, context={}):
+    def render_template(tmpl, context=None):
+        context = {} if context is None else context
         template_dir = os.path.realpath(
             os.path.join(os.path.dirname(__file__), "../", "templates")
         )
