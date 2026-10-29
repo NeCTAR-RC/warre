@@ -1,0 +1,8 @@
+---
+fixes:
+  - |
+    Fixed ``GET /v1/flavors/`` returning the same flavor more than once.
+    A flavor with several project grants was listed once per grant,
+    which inflated ``total`` and made the same flavor appear on more
+    than one page when using ``limit``. Each visible flavor is now
+    listed exactly once.

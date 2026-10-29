@@ -55,6 +55,52 @@ class TestFlavorAPI(base.ApiTestCase):
         results = response.get_json().get("results")
         self.assertEqual(1, len(results))
 
+    def test_flavor_list_public_with_grants_not_duplicated(self):
+        flavor = self.create_flavor(is_public=True)
+        for project_id in ["other1", "other2", "other3"]:
+            self.create_flavorproject(
+                flavor_id=flavor.id, project_id=project_id
+            )
+
+        response = self.client.get("/v1/flavors/")
+        self.assert200(response)
+        data = response.get_json()
+        self.assertEqual(1, len(data.get("results")))
+        self.assertEqual(1, data.get("total"))
+
+        response = self.client.get("/v1/flavors/?limit=1")
+        self.assert200(response)
+        data = response.get_json()
+        self.assertEqual(1, len(data.get("results")))
+        self.assertNotIn("next", data)
+
+    def test_flavor_list_private_with_access_not_duplicated(self):
+        flavor = self.create_flavor(is_public=False)
+        for project_id in [base.PROJECT_ID, "other1", "other2"]:
+            self.create_flavorproject(
+                flavor_id=flavor.id, project_id=project_id
+            )
+
+        response = self.client.get("/v1/flavors/")
+        self.assert200(response)
+        data = response.get_json()
+        self.assertEqual(1, len(data.get("results")))
+        self.assertEqual(flavor.id, data.get("results")[0]["id"])
+        self.assertEqual(1, data.get("total"))
+
+    def test_flavor_list_private_granted_to_others(self):
+        flavor = self.create_flavor(is_public=False)
+        for project_id in ["other1", "other2"]:
+            self.create_flavorproject(
+                flavor_id=flavor.id, project_id=project_id
+            )
+
+        response = self.client.get("/v1/flavors/")
+        self.assert200(response)
+        data = response.get_json()
+        self.assertEqual(0, len(data.get("results")))
+        self.assertEqual(0, data.get("total"))
+
     def test_flavor_list_all_projects(self):
         self.create_flavor(is_public=True)
         self.create_flavor(is_public=False)

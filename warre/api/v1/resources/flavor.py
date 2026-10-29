@@ -43,17 +43,17 @@ class FlavorList(base.Resource):
 
     def _get_flavors(self):
         if self.context.project_id:
-            # NOTE: with a NULL project_id the comparison below becomes
-            # IS NULL, which unmatched outer-join rows satisfy, leaking
-            # private flavors that have no project grants at all.
-            is_member = (
+            # Use an EXISTS subquery rather than joining FlavorProject so
+            # that a flavor with several project grants is returned once.
+            is_member = models.Flavor.projects.any(
                 models.FlavorProject.project_id == self.context.project_id
             )
         else:
+            # Tokens without a project (system or domain scope) only see
+            # public flavors.
             is_member = db.false()
         return (
             db.session.query(models.Flavor)
-            .join(models.FlavorProject, isouter=True)
             .filter(models.Flavor.active == True)
             .filter(
                 db.or_(  # noqa
