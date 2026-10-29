@@ -12,15 +12,15 @@ ENV PYTHONUNBUFFERED=1
 # Install pip requirements
 COPY requirements.txt .
 
-RUN apt update && apt install -y gcc
+RUN apt-get update && apt-get install -y --no-install-recommends gcc && rm -rf /var/lib/apt/lists/*
 
-RUN python -m pip install -c https://releases.openstack.org/constraints/upper/2026.1 -r requirements.txt
-RUN python -m pip install -c https://releases.openstack.org/constraints/upper/2026.1 gunicorn
+RUN python -m pip install --no-cache-dir -c https://releases.openstack.org/constraints/upper/2026.1 -r requirements.txt
+RUN python -m pip install --no-cache-dir -c https://releases.openstack.org/constraints/upper/2026.1 gunicorn
 
 WORKDIR /app
 COPY dist/* /app
 
-RUN python -m pip install -c https://releases.openstack.org/constraints/upper/2026.1 *.tar.gz && rm *.tar.gz
+RUN python -m pip install --no-cache-dir -c https://releases.openstack.org/constraints/upper/2026.1 *.tar.gz && rm *.tar.gz
 
 # Creates a non-root user and adds permission to access the /app folder
 # For more info, please refer to https://aka.ms/vscode-docker-python-configure-containers

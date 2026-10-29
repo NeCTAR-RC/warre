@@ -1,5 +1,3 @@
-version: '3.4'
-
 services:
   api:
     image: warre
@@ -19,10 +17,10 @@ services:
       - /etc/warre:/etc/warre
     command: ["warre-worker"]
   notification:
-      image: warre
-      build:
-        context: .
-        dockerfile: ./Dockerfile
-      volumes:
-        - /etc/warre:/etc/warre
-      command: ["warre-notification"]
+    image: warre
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    volumes:
+      - /etc/warre:/etc/warre
+    command: ["warre-notification"]
