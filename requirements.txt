@@ -3,7 +3,7 @@ python-keystoneclient
 python-blazarclient
 python-novaclient
 keystoneauth1
-keystonemiddleware
+keystonemiddleware>=12.1.0
 openstacksdk
 oslo.context
 oslo.config
